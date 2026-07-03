@@ -2,16 +2,7 @@ import { useState } from 'react';
 import { ShoppingCart, Plus, Minus, X, ArrowRight, CreditCard } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { EMAILJS_CONFIG } from '../../config/emailjs';
-
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  image: string;
-  category: string;
-  description?: string;
-  rating: number;
-}
+import { type Product } from '../../config/api';
 
 interface CartItem extends Product {
   quantity: number;

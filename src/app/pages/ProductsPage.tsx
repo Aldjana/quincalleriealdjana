@@ -2,18 +2,8 @@ import { useState } from 'react';
 import { Search, Filter, ShoppingCart, Star, ShoppingBag, X } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { EMAILJS_CONFIG } from '../../config/emailjs';
-
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  image: string;
-  category: string;
-  description?: string;
-  rating: number;
-  featured?: boolean;
-  stock?: number;
-}
+import { type Product } from '../../config/api';
+import { ProductGallery } from '../components/ProductGallery';
 
 interface ProductsPageProps {
   allProducts: Product[];
@@ -31,14 +21,14 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
     customerName: '',
     customerPhone: '',
     customerAddress: '',
-    quantity: 1
+    quantity: 1,
   });
 
-  // Filtrer les produits selon le terme de recherche
-  const filteredProducts = allProducts.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredProducts = allProducts.filter(
+    (product) =>
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleAddToCart = (product: Product) => {
@@ -50,12 +40,7 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
   const handleOrderClick = (product: Product) => {
     setSelectedProduct(product);
     setShowOrderForm(true);
-    setFormData({
-      customerName: '',
-      customerPhone: '',
-      customerAddress: '',
-      quantity: 1
-    });
+    setFormData({ customerName: '', customerPhone: '', customerAddress: '', quantity: 1 });
   };
 
   const handleOrderSubmit = async (e: React.FormEvent) => {
@@ -63,49 +48,36 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
     if (!selectedProduct) return;
 
     try {
-      // Préparer les détails de la commande pour l'email
       const orderDetails = `${selectedProduct.name} - Quantité: ${formData.quantity} - Prix unitaire: ${selectedProduct.price.toLocaleString()} FCFA - Total: ${(selectedProduct.price * formData.quantity).toLocaleString()} FCFA`;
-      
-      const emailParams = {
-        customer_name: formData.customerName,
-        customer_phone: formData.customerPhone,
-        customer_address: formData.customerAddress,
-        order_details: orderDetails,
-        total_amount: (selectedProduct.price * formData.quantity).toLocaleString(),
-        order_date: new Date().toLocaleDateString('fr-FR'),
-        to_email: EMAILJS_CONFIG.TO_EMAIL
-      };
-      
-      // Envoyer l'email via EmailJS
+
       await emailjs.send(
         EMAILJS_CONFIG.SERVICE_ID,
         EMAILJS_CONFIG.TEMPLATE_ID,
-        emailParams,
+        {
+          customer_name: formData.customerName,
+          customer_phone: formData.customerPhone,
+          customer_address: formData.customerAddress,
+          order_details: orderDetails,
+          total_amount: (selectedProduct.price * formData.quantity).toLocaleString(),
+          order_date: new Date().toLocaleDateString('fr-FR'),
+          to_email: EMAILJS_CONFIG.TO_EMAIL,
+        },
         EMAILJS_CONFIG.PUBLIC_KEY
       );
-      
+
       setShowOrderForm(false);
       setShowNotification(true);
       setSelectedProduct(null);
-      setFormData({
-        customerName: '',
-        customerPhone: '',
-        customerAddress: '',
-        quantity: 1
-      });
+      setFormData({ customerName: '', customerPhone: '', customerAddress: '', quantity: 1 });
       setTimeout(() => setShowNotification(false), 3000);
-      
     } catch (error) {
-      console.error('Erreur lors de l\'envoi de l\'email:', error);
-      alert('Erreur lors de l\'envoi de la commande. Veuillez réessayer.');
+      console.error("Erreur lors de l'envoi de l'email:", error);
+      alert("Erreur lors de l'envoi de la commande. Veuillez réessayer.");
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   return (
@@ -128,7 +100,7 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
                   placeholder="Rechercher un produit…"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-2.5 pl-10 pr-3 text-base text-slate-900 outline-none ring-orange-500/0 transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-500/20 sm:text-sm"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-2.5 pl-10 pr-3 text-base text-slate-900 outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-500/20 sm:text-sm"
                 />
               </div>
               <button
@@ -159,13 +131,13 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
               const inStock = product.stock === undefined || product.stock > 0;
               return (
                 <article
-                  key={product.id}
+                  key={product._id || product.id}
                   className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
                 >
                   <button
                     type="button"
                     onClick={() => viewProductDetail(product)}
-                    className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 text-left"
+                    className="relative aspect-[4/5] w-full overflow-hidden bg-slate-100 text-left"
                   >
                     <div className="pointer-events-none absolute left-3 right-3 top-3 z-10 flex items-start justify-between gap-2">
                       <span
@@ -183,16 +155,12 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
                         </span>
                       ) : null}
                     </div>
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="h-full w-full object-contain p-5 transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-                    />
+                    <ProductGallery product={product} variant="compact" />
                   </button>
 
                   <div className="flex flex-1 flex-col p-4 sm:p-5">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-orange-600/90">{product.category}</p>
-                    <h2 className="mt-1.5 min-h-[2.75rem] text-base font-semibold leading-snug text-slate-900 line-clamp-2">
+                    <h2 className="mt-1.5 min-h-[2.75rem] line-clamp-2 text-base font-semibold leading-snug text-slate-900">
                       <button
                         type="button"
                         onClick={() => viewProductDetail(product)}
@@ -203,7 +171,7 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
                     </h2>
 
                     <div className="mt-2 flex items-center gap-2">
-                      <div className="flex items-center gap-0.5" aria-hidden>
+                      <div className="flex items-center gap-0.5">
                         {[0, 1, 2, 3, 4].map((i) => (
                           <Star
                             key={i}
@@ -213,25 +181,18 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
                           />
                         ))}
                       </div>
-                      <span className="text-xs font-medium text-slate-500 tabular-nums">{product.rating.toFixed(1)}</span>
+                      <span className="text-xs font-medium tabular-nums text-slate-500">{product.rating.toFixed(1)}</span>
                     </div>
 
-                    <div className="mt-2 min-h-0 flex-1">
-                      {product.description ? (
-                        <p className="line-clamp-2 text-xs leading-relaxed text-slate-500">{product.description}</p>
-                      ) : null}
-                    </div>
+                    {product.description && (
+                      <p className="mt-2 line-clamp-2 flex-1 text-xs leading-relaxed text-slate-500">{product.description}</p>
+                    )}
 
                     <div className="mt-4 border-t border-slate-100 pt-4">
-                      <div className="flex items-end justify-between gap-3">
-                        <div>
-                          <p className="text-lg font-bold tabular-nums text-slate-900 sm:text-xl">
-                            {product.price.toLocaleString('fr-FR')}
-                            <span className="ml-1 text-sm font-semibold text-slate-600">FCFA</span>
-                          </p>
-                          <p className="text-[11px] text-slate-400">TTC indicatif</p>
-                        </div>
-                      </div>
+                      <p className="text-lg font-bold tabular-nums text-slate-900 sm:text-xl">
+                        {product.price.toLocaleString('fr-FR')}
+                        <span className="ml-1 text-sm font-semibold text-slate-600">FCFA</span>
+                      </p>
 
                       <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                         <button
@@ -269,102 +230,34 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
           </div>
         )}
 
-        {/* Formulaire de commande */}
         {showOrderForm && selectedProduct && (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
             <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-4 sm:max-h-[90vh] sm:rounded-2xl sm:p-6">
               <div className="mb-4 flex items-start justify-between gap-3">
                 <h2 className="min-w-0 text-lg font-bold leading-snug text-gray-800 sm:text-xl">
-                  <span className="line-clamp-3">Commander : {selectedProduct.name}</span>
+                  Commander : {selectedProduct.name}
                 </h2>
-                <button
-                  type="button"
-                  onClick={() => setShowOrderForm(false)}
-                  className="shrink-0 rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-                >
+                <button type="button" onClick={() => setShowOrderForm(false)} className="shrink-0 rounded-lg p-2 text-gray-500 hover:bg-gray-100">
                   <X className="h-5 w-5 sm:h-6 sm:w-6" />
                 </button>
               </div>
-
               <form onSubmit={handleOrderSubmit} className="space-y-3 sm:space-y-4">
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Nom complet</label>
-                  <input
-                    type="text"
-                    name="customerName"
-                    value={formData.customerName}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-sm sm:text-base"
-                    placeholder="Votre nom"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Téléphone</label>
-                  <input
-                    type="tel"
-                    name="customerPhone"
-                    value={formData.customerPhone}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-sm sm:text-base"
-                    placeholder="Votre numéro"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Adresse</label>
-                  <input
-                    type="text"
-                    name="customerAddress"
-                    value={formData.customerAddress}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-sm sm:text-base"
-                    placeholder="Votre adresse"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Quantité</label>
-                  <input
-                    type="number"
-                    name="quantity"
-                    value={formData.quantity}
-                    onChange={handleInputChange}
-                    min="1"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-sm sm:text-base"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-2 sm:flex-row sm:gap-3 pt-2">
-                  <button
-                    type="submit"
-                    className="w-full rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 sm:flex-1 sm:py-3 sm:text-base"
-                  >
-                    Confirmer la commande
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowOrderForm(false)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:flex-1 sm:py-3 sm:text-base"
-                  >
-                    Annuler
-                  </button>
+                <input name="customerName" value={formData.customerName} onChange={handleInputChange} required placeholder="Nom complet" className="w-full rounded-lg border px-3 py-2 text-sm" />
+                <input name="customerPhone" type="tel" value={formData.customerPhone} onChange={handleInputChange} required placeholder="Téléphone" className="w-full rounded-lg border px-3 py-2 text-sm" />
+                <input name="customerAddress" value={formData.customerAddress} onChange={handleInputChange} required placeholder="Adresse" className="w-full rounded-lg border px-3 py-2 text-sm" />
+                <input name="quantity" type="number" min="1" value={formData.quantity} onChange={handleInputChange} required className="w-full rounded-lg border px-3 py-2 text-sm" />
+                <div className="flex flex-col gap-2 pt-2 sm:flex-row">
+                  <button type="submit" className="w-full rounded-xl bg-orange-500 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 sm:flex-1">Confirmer</button>
+                  <button type="button" onClick={() => setShowOrderForm(false)} className="w-full rounded-xl border py-2.5 text-sm font-semibold sm:flex-1">Annuler</button>
                 </div>
               </form>
             </div>
           </div>
         )}
 
-        {/* Notification de commande envoyée */}
         {showNotification && (
-          <div className="fixed left-3 right-3 top-20 z-50 flex max-w-none items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-lg sm:left-auto sm:right-4 sm:max-w-sm">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-              <ShoppingBag className="h-5 w-5" strokeWidth={2} />
-            </span>
+          <div className="fixed left-3 right-3 top-20 z-50 flex items-start gap-3 rounded-xl border bg-white px-4 py-3 shadow-lg sm:left-auto sm:right-4 sm:max-w-sm">
+            <ShoppingBag className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
             <div>
               <p className="text-sm font-semibold text-slate-900">Commande envoyée</p>
               <p className="text-xs text-slate-500">Nous vous recontactons très bientôt.</p>
@@ -373,10 +266,8 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
         )}
 
         {showCartNotification && (
-          <div className="fixed left-3 right-3 top-20 z-50 flex max-w-none items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-lg sm:left-auto sm:right-4 sm:max-w-sm">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-700">
-              <ShoppingCart className="h-5 w-5" strokeWidth={2} />
-            </span>
+          <div className="fixed left-3 right-3 top-20 z-50 flex items-start gap-3 rounded-xl border bg-white px-4 py-3 shadow-lg sm:left-auto sm:right-4 sm:max-w-sm">
+            <ShoppingCart className="mt-0.5 h-5 w-5 shrink-0 text-orange-600" />
             <div>
               <p className="text-sm font-semibold text-slate-900">Ajouté au panier</p>
               <p className="text-xs text-slate-500">Ouvrez le panier pour finaliser.</p>

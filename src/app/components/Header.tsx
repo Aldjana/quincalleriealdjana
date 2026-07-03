@@ -5,10 +5,9 @@ interface HeaderProps {
   currentPage: string;
   setCurrentPage: (page: string) => void;
   getTotalItems: () => number;
-  adminToken?: string | null;
 }
 
-export const Header = ({ currentPage: _currentPage, setCurrentPage, getTotalItems, adminToken }: HeaderProps) => {
+export const Header = ({ currentPage: _currentPage, setCurrentPage, getTotalItems }: HeaderProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/98 shadow-lg backdrop-blur-xl supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">
@@ -47,12 +46,6 @@ export const Header = ({ currentPage: _currentPage, setCurrentPage, getTotalItem
               Contact
               <span className="absolute -bottom-1 left-0 w-0 h-1 bg-gradient-to-r from-orange-500 to-orange-600 group-hover:w-full transition-all duration-300"></span>
             </button>
-            {adminToken && (
-              <button onClick={() => setCurrentPage('dashboard')} className="text-indigo-600 hover:text-indigo-500 font-bold text-sm md:text-base lg:text-lg transition-all duration-300 relative group py-2">
-                Admin
-                <span className="absolute -bottom-1 left-0 w-0 h-1 bg-gradient-to-r from-indigo-500 to-indigo-600 group-hover:w-full transition-all duration-300"></span>
-              </button>
-            )}
           </nav>
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
@@ -122,17 +115,6 @@ export const Header = ({ currentPage: _currentPage, setCurrentPage, getTotalItem
               >
                 Contact
               </button>
-              {adminToken && (
-                <button 
-                  onClick={() => {
-                    setCurrentPage('dashboard');
-                    setIsMobileMenuOpen(false);
-                  }} 
-                  className="min-h-11 rounded-lg px-1 py-3 text-left text-base font-bold text-indigo-600 transition-colors hover:bg-indigo-50 hover:text-indigo-500"
-                >
-                  Admin
-                </button>
-              )}
             </nav>
           </div>
         </div>
