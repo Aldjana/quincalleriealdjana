@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Star, ShoppingCart, Check } from 'lucide-react';
+import { Star, ShoppingCart, ShoppingBag, Check } from 'lucide-react';
 import { type Product } from '../../config/api';
 import { ProductGallery } from './ProductGallery';
 
@@ -33,7 +33,7 @@ export const ProductsSection = ({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {allProducts.slice(0, 8).map((product) => {
             const inStock = product.stock === undefined || product.stock > 0;
             return (
@@ -44,7 +44,7 @@ export const ProductsSection = ({
                 <button
                   type="button"
                   onClick={() => viewProductDetail(product)}
-                  className="relative aspect-[4/5] w-full overflow-hidden bg-slate-100 text-left"
+                  className="relative h-64 w-full overflow-hidden rounded-t-2xl bg-slate-100 text-left sm:h-72 lg:h-80"
                 >
                   <div className="pointer-events-none absolute left-3 right-3 top-3 z-10 flex items-start justify-between gap-2">
                     <span
@@ -103,14 +103,32 @@ export const ProductsSection = ({
                       {product.price.toLocaleString('fr-FR')}
                       <span className="ml-1 text-sm font-semibold text-slate-600">FCFA</span>
                     </p>
+                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => handleAddToCart(product)}
+                        disabled={!inStock}
+                        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                      >
+                        <ShoppingCart className="h-4 w-4 shrink-0" strokeWidth={2} />
+                        Panier
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => viewProductDetail(product)}
+                        disabled={!inStock}
+                        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <ShoppingBag className="h-4 w-4 shrink-0" strokeWidth={2} />
+                        Commander
+                      </button>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => handleAddToCart(product)}
-                      disabled={!inStock}
-                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                      onClick={() => viewProductDetail(product)}
+                      className="mt-2 w-full text-center text-xs font-semibold text-orange-600 transition hover:text-orange-700"
                     >
-                      <ShoppingCart className="h-4 w-4 shrink-0" strokeWidth={2} />
-                      {inStock ? 'Ajouter au panier' : 'Indisponible'}
+                      Voir la fiche détaillée
                     </button>
                   </div>
                 </div>

@@ -19,7 +19,6 @@ export const ProductDetailPage = ({ selectedProduct, setCurrentPage, addToCart }
     customerName: '',
     customerPhone: '',
     customerAddress: '',
-    quantity: 1,
   });
 
   const handleAddToCart = () => {
@@ -32,7 +31,7 @@ export const ProductDetailPage = ({ selectedProduct, setCurrentPage, addToCart }
 
   const handleOrderClick = () => {
     setShowOrderForm(true);
-    setFormData({ customerName: '', customerPhone: '', customerAddress: '', quantity: 1 });
+    setFormData({ customerName: '', customerPhone: '', customerAddress: '' });
   };
 
   const handleOrderSubmit = async (e: React.FormEvent) => {
@@ -40,7 +39,7 @@ export const ProductDetailPage = ({ selectedProduct, setCurrentPage, addToCart }
     if (!selectedProduct) return;
 
     try {
-      const orderDetails = `${selectedProduct.name} - Quantité: ${formData.quantity} - Prix unitaire: ${selectedProduct.price.toLocaleString()} FCFA - Total: ${(selectedProduct.price * formData.quantity).toLocaleString()} FCFA`;
+      const orderDetails = `${selectedProduct.name} - Prix unitaire: ${selectedProduct.price.toLocaleString()} FCFA`;
 
       await emailjs.send(
         EMAILJS_CONFIG.SERVICE_ID,
@@ -50,7 +49,7 @@ export const ProductDetailPage = ({ selectedProduct, setCurrentPage, addToCart }
           customer_phone: formData.customerPhone,
           customer_address: formData.customerAddress,
           order_details: orderDetails,
-          total_amount: (selectedProduct.price * formData.quantity).toLocaleString(),
+          total_amount: selectedProduct.price.toLocaleString(),
           order_date: new Date().toLocaleDateString('fr-FR'),
           to_email: EMAILJS_CONFIG.TO_EMAIL,
         },
@@ -59,7 +58,7 @@ export const ProductDetailPage = ({ selectedProduct, setCurrentPage, addToCart }
 
       setShowOrderForm(false);
       setShowNotification(true);
-      setFormData({ customerName: '', customerPhone: '', customerAddress: '', quantity: 1 });
+      setFormData({ customerName: '', customerPhone: '', customerAddress: '' });
       setTimeout(() => setShowNotification(false), 3000);
     } catch (error) {
       console.error("Erreur lors de l'envoi de l'email:", error);
@@ -160,7 +159,6 @@ export const ProductDetailPage = ({ selectedProduct, setCurrentPage, addToCart }
                 <input name="customerName" placeholder="Nom complet *" required onChange={handleInputChange} className="w-full rounded-lg border px-3 py-2" />
                 <input name="customerPhone" type="tel" placeholder="Téléphone *" required onChange={handleInputChange} className="w-full rounded-lg border px-3 py-2" />
                 <input name="customerAddress" placeholder="Adresse *" required onChange={handleInputChange} className="w-full rounded-lg border px-3 py-2" />
-                <input name="quantity" type="number" min="1" defaultValue={1} required onChange={handleInputChange} className="w-full rounded-lg border px-3 py-2" />
                 <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 py-3 text-white">
                   <ShoppingBag className="h-5 w-5" />
                   Confirmer la commande

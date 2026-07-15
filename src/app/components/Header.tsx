@@ -3,11 +3,11 @@ import { Wrench, ShoppingCart, X } from 'lucide-react';
 
 interface HeaderProps {
   currentPage: string;
-  setCurrentPage: (page: string) => void;
+  navigateTo: (page: string) => void;
   getTotalItems: () => number;
 }
 
-export const Header = ({ currentPage: _currentPage, setCurrentPage, getTotalItems }: HeaderProps) => {
+export const Header = ({ currentPage: _currentPage, navigateTo, getTotalItems }: HeaderProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/98 shadow-lg backdrop-blur-xl supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">
@@ -15,7 +15,7 @@ export const Header = ({ currentPage: _currentPage, setCurrentPage, getTotalItem
         <div className="flex min-h-[4.25rem] items-center justify-between gap-2 py-2 sm:min-h-20 md:h-24 md:py-0">
           <div
             className="flex min-w-0 cursor-pointer items-center gap-2 sm:gap-4 group"
-            onClick={() => setCurrentPage('home')}
+            onClick={() => navigateTo('home')}
           >
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 shadow-lg transition-all duration-300 group-hover:scale-105 sm:h-12 sm:w-12 sm:rounded-2xl sm:shadow-2xl lg:h-16 lg:w-16">
               <Wrench className="h-5 w-5 text-white sm:h-7 sm:w-7 lg:h-9 lg:w-9" />
@@ -34,15 +34,15 @@ export const Header = ({ currentPage: _currentPage, setCurrentPage, getTotalItem
           </div>
 
           <nav className="hidden md:flex items-center gap-4 lg:gap-10">
-            <button onClick={() => setCurrentPage('home')} className="text-[#0f172a] hover:text-orange-500 font-bold text-sm md:text-base lg:text-lg transition-all duration-300 relative group py-2">
+            <button onClick={() => navigateTo('home')} className="text-[#0f172a] hover:text-orange-500 font-bold text-sm md:text-base lg:text-lg transition-all duration-300 relative group py-2">
               Accueil
               <span className="absolute -bottom-1 left-0 w-0 h-1 bg-gradient-to-r from-orange-500 to-orange-600 group-hover:w-full transition-all duration-300"></span>
             </button>
-            <button onClick={() => setCurrentPage('products')} className="text-[#0f172a] hover:text-orange-500 font-bold text-sm md:text-base lg:text-lg transition-all duration-300 relative group py-2">
+            <button onClick={() => navigateTo('products')} className="text-[#0f172a] hover:text-orange-500 font-bold text-sm md:text-base lg:text-lg transition-all duration-300 relative group py-2">
               Produits
               <span className="absolute -bottom-1 left-0 w-0 h-1 bg-gradient-to-r from-orange-500 to-orange-600 group-hover:w-full transition-all duration-300"></span>
             </button>
-            <button onClick={() => setCurrentPage('contact')} className="text-[#0f172a] hover:text-orange-500 font-bold text-sm md:text-base lg:text-lg transition-all duration-300 relative group py-2">
+            <button onClick={() => navigateTo('contact')} className="text-[#0f172a] hover:text-orange-500 font-bold text-sm md:text-base lg:text-lg transition-all duration-300 relative group py-2">
               Contact
               <span className="absolute -bottom-1 left-0 w-0 h-1 bg-gradient-to-r from-orange-500 to-orange-600 group-hover:w-full transition-all duration-300"></span>
             </button>
@@ -51,7 +51,7 @@ export const Header = ({ currentPage: _currentPage, setCurrentPage, getTotalItem
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
             <button
               type="button"
-              onClick={() => setCurrentPage('cart')}
+              onClick={() => navigateTo('cart')}
               aria-label="Ouvrir le panier"
               className="relative flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 p-2 text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:from-orange-600 hover:to-orange-700 sm:min-h-12 sm:min-w-12 sm:rounded-xl sm:p-3 sm:shadow-lg"
             >
@@ -90,7 +90,7 @@ export const Header = ({ currentPage: _currentPage, setCurrentPage, getTotalItem
             <nav className="flex flex-col gap-1">
               <button 
                 onClick={() => {
-                  setCurrentPage('home');
+                  navigateTo('home');
                   setIsMobileMenuOpen(false);
                 }} 
                 className="min-h-11 rounded-lg px-1 py-3 text-left text-base font-bold text-[#0f172a] transition-colors hover:bg-orange-50 hover:text-orange-500"
@@ -99,7 +99,7 @@ export const Header = ({ currentPage: _currentPage, setCurrentPage, getTotalItem
               </button>
               <button 
                 onClick={() => {
-                  setCurrentPage('products');
+                  navigateTo('products');
                   setIsMobileMenuOpen(false);
                 }} 
                 className="min-h-11 rounded-lg px-1 py-3 text-left text-base font-bold text-[#0f172a] transition-colors hover:bg-orange-50 hover:text-orange-500"
@@ -108,7 +108,7 @@ export const Header = ({ currentPage: _currentPage, setCurrentPage, getTotalItem
               </button>
               <button 
                 onClick={() => {
-                  setCurrentPage('contact');
+                  navigateTo('contact');
                   setIsMobileMenuOpen(false);
                 }} 
                 className="min-h-11 rounded-lg px-1 py-3 text-left text-base font-bold text-[#0f172a] transition-colors hover:bg-orange-50 hover:text-orange-500"

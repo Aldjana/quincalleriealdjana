@@ -39,7 +39,7 @@ export const ProductGallery = ({ product, variant = 'detail' }: ProductGalleryPr
 
   return (
     <div className="w-full space-y-4">
-      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-slate-100 shadow-lg sm:aspect-square md:min-h-[420px] lg:min-h-[520px]">
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-slate-100 shadow-lg sm:aspect-square md:min-h-[320px] lg:min-h-[420px]">
         <img
           key={activeImage}
           src={activeImage}

@@ -21,7 +21,6 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
     customerName: '',
     customerPhone: '',
     customerAddress: '',
-    quantity: 1,
   });
 
   const filteredProducts = allProducts.filter(
@@ -40,7 +39,7 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
   const handleOrderClick = (product: Product) => {
     setSelectedProduct(product);
     setShowOrderForm(true);
-    setFormData({ customerName: '', customerPhone: '', customerAddress: '', quantity: 1 });
+    setFormData({ customerName: '', customerPhone: '', customerAddress: '' });
   };
 
   const handleOrderSubmit = async (e: React.FormEvent) => {
@@ -48,7 +47,7 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
     if (!selectedProduct) return;
 
     try {
-      const orderDetails = `${selectedProduct.name} - Quantité: ${formData.quantity} - Prix unitaire: ${selectedProduct.price.toLocaleString()} FCFA - Total: ${(selectedProduct.price * formData.quantity).toLocaleString()} FCFA`;
+      const orderDetails = `${selectedProduct.name} - Prix unitaire: ${selectedProduct.price.toLocaleString()} FCFA`;
 
       await emailjs.send(
         EMAILJS_CONFIG.SERVICE_ID,
@@ -58,7 +57,7 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
           customer_phone: formData.customerPhone,
           customer_address: formData.customerAddress,
           order_details: orderDetails,
-          total_amount: (selectedProduct.price * formData.quantity).toLocaleString(),
+          total_amount: selectedProduct.price.toLocaleString(),
           order_date: new Date().toLocaleDateString('fr-FR'),
           to_email: EMAILJS_CONFIG.TO_EMAIL,
         },
@@ -68,7 +67,7 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
       setShowOrderForm(false);
       setShowNotification(true);
       setSelectedProduct(null);
-      setFormData({ customerName: '', customerPhone: '', customerAddress: '', quantity: 1 });
+      setFormData({ customerName: '', customerPhone: '', customerAddress: '' });
       setTimeout(() => setShowNotification(false), 3000);
     } catch (error) {
       console.error("Erreur lors de l'envoi de l'email:", error);
@@ -137,7 +136,7 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
                   <button
                     type="button"
                     onClick={() => viewProductDetail(product)}
-                    className="relative aspect-[4/5] w-full overflow-hidden bg-slate-100 text-left"
+                    className="relative h-64 w-full overflow-hidden rounded-t-2xl bg-slate-100 text-left sm:h-72 lg:h-80"
                   >
                     <div className="pointer-events-none absolute left-3 right-3 top-3 z-10 flex items-start justify-between gap-2">
                       <span
@@ -245,7 +244,6 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
                 <input name="customerName" value={formData.customerName} onChange={handleInputChange} required placeholder="Nom complet" className="w-full rounded-lg border px-3 py-2 text-sm" />
                 <input name="customerPhone" type="tel" value={formData.customerPhone} onChange={handleInputChange} required placeholder="Téléphone" className="w-full rounded-lg border px-3 py-2 text-sm" />
                 <input name="customerAddress" value={formData.customerAddress} onChange={handleInputChange} required placeholder="Adresse" className="w-full rounded-lg border px-3 py-2 text-sm" />
-                <input name="quantity" type="number" min="1" value={formData.quantity} onChange={handleInputChange} required className="w-full rounded-lg border px-3 py-2 text-sm" />
                 <div className="flex flex-col gap-2 pt-2 sm:flex-row">
                   <button type="submit" className="w-full rounded-xl bg-orange-500 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 sm:flex-1">Confirmer</button>
                   <button type="button" onClick={() => setShowOrderForm(false)} className="w-full rounded-xl border py-2.5 text-sm font-semibold sm:flex-1">Annuler</button>
