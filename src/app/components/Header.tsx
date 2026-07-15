@@ -10,7 +10,7 @@ interface HeaderProps {
 export const Header = ({ currentPage: _currentPage, navigateTo, getTotalItems }: HeaderProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/98 shadow-lg backdrop-blur-xl supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-gray-100 bg-white/98 shadow-lg backdrop-blur-xl supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">
       <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6">
         <div className="flex min-h-[4.25rem] items-center justify-between gap-2 py-2 sm:min-h-20 md:h-24 md:py-0">
           <div

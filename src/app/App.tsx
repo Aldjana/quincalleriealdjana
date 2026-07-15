@@ -12,7 +12,7 @@ import { Footer } from './components/Footer';
 import { ProductsPage } from './pages/ProductsPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
 import { CartPage } from './pages/CartPage';
-import { ContactPage } from './pages/ContactPage';
+import { ContactPage } from './pages/ContactPage';  
 
 // Types
 interface CartItem extends Product {
@@ -43,7 +43,7 @@ function AppLayout({
         navigateTo={navigateTo}
         getTotalItems={getTotalItems}
       />
-      <main className={`min-w-0 w-full flex-1 ${mainClass}`}>{children}</main>
+      <main className={`min-w-0 w-full flex-1 pt-20 sm:pt-24 ${mainClass}`}>{children}</main>
       {showFooter && <Footer />}
     </div>
   );
@@ -184,7 +184,7 @@ export default function App() {
     );
   };
 
-  const showFooter = currentPage !== 'products' && currentPage !== 'product-detail';
+  const showFooter = currentPage !== 'products' && currentPage !== 'product-detail' && currentPage !== 'cart';
   const mainClass = currentPage === 'cart' || currentPage === 'contact' ? 'bg-white' : 'bg-slate-50';
 
   return (
