@@ -1,4 +1,4 @@
-import { Wrench, Hammer, PackageSearch, Paintbrush, Lightbulb, TrendingUp, ArrowRight } from 'lucide-react';
+import { Wrench, Hammer, PackageSearch, TrendingUp, ArrowRight } from 'lucide-react';
 
 interface CategoriesSectionProps {
   setCurrentPage: (page: string) => void;
@@ -19,7 +19,7 @@ export const CategoriesSection = ({ setCurrentPage }: CategoriesSectionProps) =>
           <p className="text-gray-600 text-sm sm:text-base lg:text-lg max-w-2xl sm:max-w-3xl mx-auto">Explorez notre large gamme de produits professionnels pour tous vos projets de construction et rénovation</p>
         </div>
         
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6 lg:gap-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
           <div className="flex flex-col items-center cursor-pointer group" onClick={() => setCurrentPage('products')}>
             <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg sm:shadow-xl mb-3 sm:mb-4 transition-all duration-300 group-hover:shadow-2xl group-hover:scale-105">
               <Hammer className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white" />
@@ -44,22 +44,6 @@ export const CategoriesSection = ({ setCurrentPage }: CategoriesSectionProps) =>
             </div>
             <span className="line-clamp-2 text-center text-[11px] font-bold leading-tight text-gray-800 sm:text-sm md:text-base lg:text-lg">Scie</span>
             <span className="text-xs sm:text-sm text-gray-500 text-center mt-1">+120 modèles</span>
-          </div>
-          
-          <div className="flex flex-col items-center cursor-pointer group" onClick={() => setCurrentPage('products')}>
-            <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg sm:shadow-xl mb-3 sm:mb-4 transition-all duration-300 group-hover:shadow-2xl group-hover:scale-105">
-              <Paintbrush className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white" />
-            </div>
-            <span className="line-clamp-2 text-center text-[11px] font-bold leading-tight text-gray-800 sm:text-sm md:text-base lg:text-lg">Peinture</span>
-            <span className="text-xs sm:text-sm text-gray-500 text-center mt-1">+200 modèles</span>
-          </div>
-          
-          <div className="flex flex-col items-center cursor-pointer group" onClick={() => setCurrentPage('products')}>
-            <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-red-400 via-red-500 to-red-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg sm:shadow-xl mb-3 sm:mb-4 transition-all duration-300 group-hover:shadow-2xl group-hover:scale-105">
-              <Lightbulb className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white" />
-            </div>
-            <span className="line-clamp-2 text-center text-[11px] font-bold leading-tight text-gray-800 sm:text-sm md:text-base lg:text-lg">Électricité</span>
-            <span className="text-xs sm:text-sm text-gray-500 text-center mt-1">+180 modèles</span>
           </div>
           
           <div className="flex flex-col items-center cursor-pointer group" onClick={() => setCurrentPage('products')}>
