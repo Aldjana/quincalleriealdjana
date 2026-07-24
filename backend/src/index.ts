@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import productsRouter from './routes/products.js';
+import authRouter from './routes/auth.js';
 import { connectDatabase, getStorageMode } from './db/connection.js';
 
 dotenv.config();
@@ -16,6 +17,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.use('/api/products', productsRouter);
+app.use('/api/auth', authRouter);
 
 app.get('/', (_req, res) => {
   res.json({

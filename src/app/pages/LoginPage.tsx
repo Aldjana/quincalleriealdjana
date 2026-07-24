@@ -12,20 +12,34 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    if (email === 'admin@quincaillerie.com' && password === 'admin123') {
-      const token = 'token_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('adminToken', token);
-      onLogin(token);
-    } else {
-      setError('Email ou mot de passe incorrect');
-    }
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+      const response = await fetch(`${apiUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    setLoading(false);
+      const data = await response.json();
+
+      if (data.success) {
+        localStorage.setItem('adminToken', data.token);
+        onLogin(data.token);
+      } else {
+        setError(data.message || 'Email ou mot de passe incorrect');
+      }
+    } catch (err) {
+      setError('Erreur de connexion au serveur');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

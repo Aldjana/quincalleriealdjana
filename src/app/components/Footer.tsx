@@ -79,11 +79,11 @@ export const Footer = () => {
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />
-                77 123 45 67
+                77 698 14 53
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="w-4 h-4" />
-                contact@aldjana.sn
+                seckf004@gmail.com
               </li>
               <li className="flex items-center gap-2">
                 <MapPin className="w-4 h-4" />

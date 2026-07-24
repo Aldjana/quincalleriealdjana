@@ -130,7 +130,7 @@ export const CartPage = ({ cart, setCurrentPage, getTotalPrice, removeFromCart, 
                       <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      onClick={() => item.id !== undefined && updateQuantity(item.id, item.quantity - 1)}
                       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-200 transition-colors hover:bg-gray-300 sm:h-10 sm:w-10"
                     >
                           <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -138,7 +138,7 @@ export const CartPage = ({ cart, setCurrentPage, getTotalPrice, removeFromCart, 
                         <span className="w-6 sm:w-8 text-center font-semibold text-sm sm:text-base">{item.quantity}</span>
                         <button
                           type="button"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          onClick={() => item.id !== undefined && updateQuantity(item.id, item.quantity + 1)}
                           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-200 transition-colors hover:bg-gray-300 sm:h-10 sm:w-10"
                         >
                           <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -152,7 +152,7 @@ export const CartPage = ({ cart, setCurrentPage, getTotalPrice, removeFromCart, 
                       </p>
                     <button
                       type="button"
-                      onClick={() => removeFromCart(item.id)}
+                      onClick={() => item.id !== undefined && removeFromCart(item.id)}
                       aria-label="Retirer du panier"
                       className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-700"
                     >
@@ -169,19 +169,19 @@ export const CartPage = ({ cart, setCurrentPage, getTotalPrice, removeFromCart, 
                 <h3 className="text-lg sm:text-xl font-bold text-[#0a2463] mb-3 sm:mb-4">Récapitulatif</h3>
                 
                 <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
-                  <div className="flex justify-between">
+                  <div key="subtotal" className="flex justify-between">
                     <span className="text-gray-600 text-sm sm:text-base">Sous-total</span>
                     <span className="font-semibold text-sm sm:text-base">{getTotalPrice().toLocaleString()} FCFA</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div key="delivery" className="flex justify-between">
                     <span className="text-gray-600 text-sm sm:text-base">Livraison</span>
                     <span className="font-semibold text-sm sm:text-base">Gratuite</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div key="tax" className="flex justify-between">
                     <span className="text-gray-600 text-sm sm:text-base">TVA</span>
                     <span className="font-semibold text-sm sm:text-base">0 FCFA</span>
                   </div>
-                  <div className="border-t pt-2 sm:pt-3">
+                  <div key="total" className="border-t pt-2 sm:pt-3">
                     <div className="flex justify-between">
                       <span className="text-base sm:text-lg font-bold text-[#0a2463]">Total</span>
                       <span className="text-base sm:text-lg font-bold text-orange-500">{getTotalPrice().toLocaleString()} FCFA</span>
