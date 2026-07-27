@@ -52,38 +52,40 @@ export const HeroSection = ({ setCurrentPage }: HeroSectionProps) => {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 pt-4 sm:grid-cols-3 sm:gap-6 sm:pt-8">
+            <div className="grid grid-cols-3 gap-3 pt-4 sm:grid-cols-3 sm:gap-6 sm:pt-8">
               <div className="text-center group">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-2 sm:mb-3 shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                  <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                <div className="w-10 h-10 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-1 sm:mb-3 shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                  <Shield className="w-5 h-5 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <p className="text-xs sm:text-sm font-bold text-gray-800">Garantie</p>
-                <p className="text-xs text-gray-500">2 ans</p>
+                <p className="text-[10px] sm:text-sm font-bold text-gray-800">Garantie</p>
+                <p className="text-[10px] text-gray-500 sm:text-xs">2 ans</p>
               </div>
               <div className="text-center group">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-2 sm:mb-3 shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                  <Truck className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                <div className="w-10 h-10 sm:w-16 sm:h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-1 sm:mb-3 shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                  <Truck className="w-5 h-5 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <p className="text-xs sm:text-sm font-bold text-gray-800">Livraison</p>
-                <p className="text-xs text-gray-500">24h Express</p>
+                <p className="text-[10px] sm:text-sm font-bold text-gray-800">Livraison</p>
+                <p className="text-[10px] text-gray-500 sm:text-xs">24h Express</p>
               </div>
               <div className="text-center group">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-2 sm:mb-3 shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                  <Award className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                <div className="w-10 h-10 sm:w-16 sm:h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-1 sm:mb-3 shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                  <Award className="w-5 h-5 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <p className="text-xs sm:text-sm font-bold text-gray-800">Qualité</p>
-                <p className="text-xs text-gray-500">Premium</p>
+                <p className="text-[10px] sm:text-sm font-bold text-gray-800">Qualité</p>
+                <p className="text-[10px] text-gray-500 sm:text-xs">Premium</p>
               </div>
             </div>
           </div>
 
           <div className="relative order-1 lg:order-2">
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-orange-500/20 to-blue-500/20 blur-xl sm:rounded-3xl" />
-            <div className="relative rounded-2xl bg-white/80 p-1 shadow-2xl backdrop-blur-sm sm:rounded-3xl sm:p-2">
+            <div className="relative aspect-[4/3] w-full rounded-2xl bg-gray-100 sm:rounded-3xl">
               <img
                 src="https://etablissements-debibie.fr/wp-content/uploads/2023/06/Quincaillerie.jpg"
                 alt="Magasin de quincaillerie et outillage"
-                className="w-full max-h-[min(55vh,28rem)] rounded-xl object-cover sm:max-h-none sm:rounded-2xl"
+                className="h-full w-full rounded-xl object-cover sm:rounded-2xl"
+                loading="eager"
+                decoding="async"
               />
             </div>
             <div className="mt-4 flex justify-end sm:absolute sm:bottom-4 sm:right-4 sm:mt-0 md:bottom-6 md:right-6">
