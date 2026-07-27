@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import { FolderOpen, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { FolderOpen, X, Loader2 } from 'lucide-react';
 
 interface LocalImagePickerProps {
   selected: string[];
@@ -9,27 +9,46 @@ interface LocalImagePickerProps {
 
 export const LocalImagePicker = ({ selected, onChange, max = 6 }: LocalImagePickerProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
-  const readFile = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+  const uploadImage = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+    const response = await fetch(`${apiUrl}/api/upload/single`, {
+      method: 'POST',
+      body: formData,
     });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de l\'upload');
+    }
+
+    const data = await response.json();
+    return data.imageUrl;
+  };
 
   const handleFiles = async (files: FileList | null) => {
     if (!files?.length) return;
 
     const remaining = max - selected.length;
-    const toRead = Array.from(files)
+    const toUpload = Array.from(files)
       .filter((f) => f.type.startsWith('image/'))
       .slice(0, remaining);
 
-    if (toRead.length === 0) return;
+    if (toUpload.length === 0) return;
 
-    const urls = await Promise.all(toRead.map(readFile));
-    onChange([...selected, ...urls]);
+    setUploading(true);
+    try {
+      const uploadedUrls = await Promise.all(toUpload.map(uploadImage));
+      onChange([...selected, ...uploadedUrls]);
+    } catch (error) {
+      console.error('Erreur upload:', error);
+      alert('Erreur lors de l\'upload des images');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -49,11 +68,20 @@ export const LocalImagePicker = ({ selected, onChange, max = 6 }: LocalImagePick
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        disabled={selected.length >= max}
+        disabled={selected.length >= max || uploading}
         className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-orange-500/40 bg-orange-500/10 px-5 py-3.5 text-sm font-semibold text-orange-400 transition hover:bg-orange-500/20 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
       >
-        <FolderOpen className="h-5 w-5" />
-        Choisir des photos 
+        {uploading ? (
+          <>
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Upload en cours...
+          </>
+        ) : (
+          <>
+            <FolderOpen className="h-5 w-5" />
+            Choisir des photos 
+          </>
+        )}
       </button>
 
       <p className="text-xs text-slate-500">
