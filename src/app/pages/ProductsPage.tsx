@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Filter, ShoppingCart, Star, ShoppingBag, X } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Star, ShoppingBag, X, Loader2 } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { EMAILJS_CONFIG } from '../../config/emailjs';
 import { type Product } from '../../config/api';
@@ -16,6 +16,7 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showNotification, setShowNotification] = useState(false);
   const [showCartNotification, setShowCartNotification] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     customerName: '',
@@ -45,6 +46,7 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
   const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProduct) return;
+    setIsSubmitting(true);
 
     try {
       const orderDetails = `${selectedProduct.name} - Prix unitaire: ${selectedProduct.price.toLocaleString()} FCFA`;
@@ -72,6 +74,8 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
     } catch (error) {
       console.error("Erreur lors de l'envoi de l'email:", error);
       alert("Erreur lors de l'envoi de la commande. Veuillez réessayer.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -230,8 +234,8 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
         )}
 
         {showOrderForm && selectedProduct && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
-            <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-4 sm:max-h-[90vh] sm:rounded-2xl sm:p-6">
+          <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+            <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-4 sm:max-h-[90vh] sm:rounded-2xl sm:p-6 relative z-[10000]">
               <div className="mb-4 flex items-start justify-between gap-3">
                 <h2 className="min-w-0 text-lg font-bold leading-snug text-gray-800 sm:text-xl">
                   Commander : {selectedProduct.name}
@@ -245,8 +249,28 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
                 <input name="customerPhone" type="tel" value={formData.customerPhone} onChange={handleInputChange} required placeholder="Téléphone" className="w-full rounded-lg border px-3 py-2 text-sm" />
                 <input name="customerAddress" value={formData.customerAddress} onChange={handleInputChange} required placeholder="Adresse" className="w-full rounded-lg border px-3 py-2 text-sm" />
                 <div className="flex flex-col gap-2 pt-2 sm:flex-row">
-                  <button type="submit" className="w-full rounded-xl bg-orange-500 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 sm:flex-1">Confirmer</button>
-                  <button type="button" onClick={() => setShowOrderForm(false)} className="w-full rounded-xl border py-2.5 text-sm font-semibold sm:flex-1">Annuler</button>
+                  <button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="w-full rounded-xl bg-orange-500 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 sm:flex-1 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Envoi en cours...</span>
+                      </>
+                    ) : (
+                      <span>Confirmer</span>
+                    )}
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowOrderForm(false)} 
+                    disabled={isSubmitting}
+                    className="w-full rounded-xl border py-2.5 text-sm font-semibold sm:flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Annuler
+                  </button>
                 </div>
               </form>
             </div>
@@ -254,7 +278,7 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
         )}
 
         {showNotification && (
-          <div className="fixed left-3 right-3 top-20 z-50 flex items-start gap-3 rounded-xl border bg-white px-4 py-3 shadow-lg sm:left-auto sm:right-4 sm:max-w-sm">
+          <div className="fixed left-3 right-3 top-20 z-[10001] flex items-start gap-3 rounded-xl border bg-white px-4 py-3 shadow-lg sm:left-auto sm:right-4 sm:max-w-sm">
             <ShoppingBag className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
             <div>
               <p className="text-sm font-semibold text-slate-900">Commande envoyée</p>
@@ -264,7 +288,7 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
         )}
 
         {showCartNotification && (
-          <div className="fixed left-3 right-3 top-20 z-50 flex items-start gap-3 rounded-xl border bg-white px-4 py-3 shadow-lg sm:left-auto sm:right-4 sm:max-w-sm">
+          <div className="fixed left-3 right-3 top-20 z-[10001] flex items-start gap-3 rounded-xl border bg-white px-4 py-3 shadow-lg sm:left-auto sm:right-4 sm:max-w-sm">
             <ShoppingCart className="mt-0.5 h-5 w-5 shrink-0 text-orange-600" />
             <div>
               <p className="text-sm font-semibold text-slate-900">Ajouté au panier</p>

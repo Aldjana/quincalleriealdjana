@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShoppingCart, Plus, Minus, X, ArrowRight, CreditCard } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, X, ArrowRight, CreditCard, Loader2 } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { EMAILJS_CONFIG } from '../../config/emailjs';
 import { type Product } from '../../config/api';
@@ -20,6 +20,7 @@ interface CartPageProps {
 export const CartPage = ({ cart, setCurrentPage, getTotalPrice, removeFromCart, updateQuantity, clearCart }: CartPageProps) => {
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
@@ -37,6 +38,7 @@ export const CartPage = ({ cart, setCurrentPage, getTotalPrice, removeFromCart, 
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
     try {
       // Préparer les détails de la commande pour l'email
@@ -83,6 +85,8 @@ export const CartPage = ({ cart, setCurrentPage, getTotalPrice, removeFromCart, 
       }
       
       alert(`Erreur lors de l\'envoi de la commande: ${error instanceof Error ? error.message : 'Erreur inconnue'}. Veuillez réessayer.`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -272,14 +276,26 @@ export const CartPage = ({ cart, setCurrentPage, getTotalPrice, removeFromCart, 
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   type="submit"
-                  className="w-full sm:flex-1 px-4 py-2 sm:py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 text-sm sm:text-base font-semibold"
+                  disabled={isSubmitting}
+                  className="w-full sm:flex-1 px-4 py-2 sm:py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 text-sm sm:text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  Confirmer la commande
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                      <span>Envoi en cours...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span>Confirmer la commande</span>
+                    </>
+                  )}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowOrderForm(false)}
-                  className="w-full sm:flex-1 px-4 py-2 sm:py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm sm:text-base font-semibold"
+                  disabled={isSubmitting}
+                  className="w-full sm:flex-1 px-4 py-2 sm:py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm sm:text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Annuler
                 </button>

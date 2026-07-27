@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Star, Truck, HeadphonesIcon, ShoppingCart, ChevronDown, ShoppingBag, X } from 'lucide-react';
+import { Star, Truck, HeadphonesIcon, ShoppingCart, ChevronDown, ShoppingBag, X, Loader2 } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { EMAILJS_CONFIG } from '../../config/emailjs';
 import { type Product } from '../../config/api';
@@ -15,6 +15,7 @@ export const ProductDetailPage = ({ selectedProduct, setCurrentPage, addToCart }
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
   const [showCartNotification, setShowCartNotification] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
@@ -37,6 +38,7 @@ export const ProductDetailPage = ({ selectedProduct, setCurrentPage, addToCart }
   const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProduct) return;
+    setIsSubmitting(true);
 
     try {
       const orderDetails = `${selectedProduct.name} - Prix unitaire: ${selectedProduct.price.toLocaleString()} FCFA`;
@@ -63,6 +65,8 @@ export const ProductDetailPage = ({ selectedProduct, setCurrentPage, addToCart }
     } catch (error) {
       console.error("Erreur lors de l'envoi de l'email:", error);
       alert("Erreur lors de l'envoi de la commande. Veuillez réessayer.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -145,8 +149,8 @@ export const ProductDetailPage = ({ selectedProduct, setCurrentPage, addToCart }
         </div>
 
         {showOrderForm && selectedProduct && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
-            <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-4 sm:max-h-[90vh] sm:rounded-2xl sm:p-6">
+          <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+            <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-4 sm:max-h-[90vh] sm:rounded-2xl sm:p-6 relative z-[10000]">
               <div className="mb-4 flex items-start justify-between gap-3">
                 <h3 className="min-w-0 text-lg font-bold leading-snug text-[#0a2463] sm:text-xl">
                   Commander : {selectedProduct.name}
@@ -159,9 +163,22 @@ export const ProductDetailPage = ({ selectedProduct, setCurrentPage, addToCart }
                 <input name="customerName" placeholder="Nom complet *" required onChange={handleInputChange} className="w-full rounded-lg border px-3 py-2" />
                 <input name="customerPhone" type="tel" placeholder="Téléphone *" required onChange={handleInputChange} className="w-full rounded-lg border px-3 py-2" />
                 <input name="customerAddress" placeholder="Adresse *" required onChange={handleInputChange} className="w-full rounded-lg border px-3 py-2" />
-                <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 py-3 text-white">
-                  <ShoppingBag className="h-5 w-5" />
-                  Confirmer la commande
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 py-3 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>Envoi en cours...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingBag className="h-5 w-5" />
+                      <span>Confirmer la commande</span>
+                    </>
+                  )}
                 </button>
               </form>
             </div>
@@ -169,14 +186,14 @@ export const ProductDetailPage = ({ selectedProduct, setCurrentPage, addToCart }
         )}
 
         {showNotification && (
-          <div className="fixed left-3 right-3 top-20 z-50 rounded-xl border bg-white p-4 shadow-lg sm:left-auto sm:right-4 sm:max-w-sm">
+          <div className="fixed left-3 right-3 top-20 z-[10001] rounded-xl border bg-white p-4 shadow-lg sm:left-auto sm:right-4 sm:max-w-sm">
             <p className="font-bold text-slate-900">Commande envoyée!</p>
             <p className="text-sm text-slate-600">Nous vous contacterons prochainement</p>
           </div>
         )}
 
         {showCartNotification && (
-          <div className="fixed left-3 right-3 top-20 z-50 rounded-xl border bg-white p-4 shadow-lg sm:left-auto sm:right-4 sm:max-w-sm">
+          <div className="fixed left-3 right-3 top-20 z-[10001] rounded-xl border bg-white p-4 shadow-lg sm:left-auto sm:right-4 sm:max-w-sm">
             <p className="font-bold text-slate-900">Produit ajouté!</p>
             <p className="text-sm text-slate-600">Le produit a été ajouté à votre panier</p>
           </div>
