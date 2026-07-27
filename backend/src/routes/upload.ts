@@ -9,6 +9,15 @@ const __dirname = path.dirname(__filename);
 
 const router = Router();
 
+// Récupérer l'URL de base depuis l'environnement ou utiliser l'URL de la requête
+const getBaseUrl = (req: any) => {
+  const envUrl = process.env.BASE_URL;
+  if (envUrl) {
+    return envUrl;
+  }
+  return `${req.protocol}://${req.get('host')}`;
+};
+
 // Configuration du stockage
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
@@ -46,8 +55,10 @@ router.post('/single', upload.single('image'), (req, res) => {
     return res.status(400).json({ error: 'Aucun fichier uploadé' });
   }
   
+  const baseUrl = getBaseUrl(req);
   const imageUrl = `/images/${req.file.filename}`;
-  res.json({ imageUrl, filename: req.file.filename });
+  const fullImageUrl = `${baseUrl}${imageUrl}`;
+  res.json({ imageUrl: fullImageUrl, filename: req.file.filename });
 });
 
 // Endpoint pour uploader plusieurs images
@@ -56,7 +67,11 @@ router.post('/multiple', upload.array('images', 6), (req, res) => {
     return res.status(400).json({ error: 'Aucun fichier uploadé' });
   }
   
-  const imageUrls = req.files.map((file: any) => `/images/${file.filename}`);
+  const baseUrl = getBaseUrl(req);
+  const imageUrls = req.files.map((file: any) => {
+    const imageUrl = `/images/${file.filename}`;
+    return `${baseUrl}${imageUrl}`;
+  });
   res.json({ imageUrls, filenames: req.files.map((f: any) => f.filename) });
 });
 
