@@ -54,14 +54,38 @@ export default function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadProducts = async () => {
+      setIsLoading(true);
       try {
+        // Essayer de charger depuis le cache d'abord
+        const cachedProducts = localStorage.getItem('cached_products');
+        if (cachedProducts) {
+          const parsed = JSON.parse(cachedProducts);
+          setProducts(parsed);
+          setIsLoading(false);
+        }
+
+        // Charger depuis l'API avec un timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 secondes timeout
+
         const data = await productsAPI.getAll();
+        clearTimeout(timeoutId);
+        
         setProducts(data);
+        localStorage.setItem('cached_products', JSON.stringify(data));
       } catch (error) {
         console.error('Erreur au chargement des produits :', error);
+        // Si l'API échoue mais qu'on a des données en cache, les garder
+        const cachedProducts = localStorage.getItem('cached_products');
+        if (cachedProducts) {
+          setProducts(JSON.parse(cachedProducts));
+        }
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -119,6 +143,17 @@ export default function App() {
   };
 
   const renderPage = () => {
+    if (isLoading && products.length === 0) {
+      return (
+        <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+            <p className="text-gray-600">Chargement des produits...</p>
+          </div>
+        </div>
+      );
+    }
+
     if (currentPage === 'home') {
       return (
         <>
