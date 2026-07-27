@@ -12,8 +12,8 @@ interface CartPageProps {
   cart: CartItem[];
   setCurrentPage: (page: string) => void;
   getTotalPrice: () => number;
-  removeFromCart: (id: number) => void;
-  updateQuantity: (id: number, quantity: number) => void;
+  removeFromCart: (id: string | number) => void;
+  updateQuantity: (id: string | number, quantity: number) => void;
   clearCart: () => void;
 }
 
@@ -110,57 +110,60 @@ export const CartPage = ({ cart, setCurrentPage, getTotalPrice, removeFromCart, 
           <div className="grid lg:grid-cols-3 gap-6 sm:gap-8">
             <div className="lg:col-span-2">
               <div className="space-y-3 sm:space-y-4">
-                {cart.map((item) => (
-                  <div key={item.id} className="bg-white border rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-                    <div className="w-16 h-16 sm:w-24 sm:h-24 bg-gray-100 rounded-lg p-2 flex-shrink-0">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
+                {cart.map((item) => {
+                  const itemId = item._id || item.id;
+                  return (
+                    <div key={itemId} className="bg-white border rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+                      <div className="w-16 h-16 sm:w-24 sm:h-24 bg-gray-100 rounded-lg p-2 flex-shrink-0">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
 
-                    <div className="flex-1 w-full">
-                      <h3 className="text-base sm:text-lg text-gray-800 mb-1">{item.name}</h3>
-                      <p className="text-xs sm:text-sm text-gray-600 mb-2">{item.category}</p>
-                      <p className="text-base sm:text-lg font-bold text-orange-500">{item.price.toLocaleString()} FCFA</p>
-                    </div>
+                      <div className="flex-1 w-full">
+                        <h3 className="text-base sm:text-lg text-gray-800 mb-1">{item.name}</h3>
+                        <p className="text-xs sm:text-sm text-gray-600 mb-2">{item.category}</p>
+                        <p className="text-base sm:text-lg font-bold text-orange-500">{item.price.toLocaleString()} FCFA</p>
+                      </div>
 
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
-                      <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => item.id !== undefined && updateQuantity(item.id, item.quantity - 1)}
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-200 transition-colors hover:bg-gray-300 sm:h-10 sm:w-10"
-                    >
-                          <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
-                        </button>
-                        <span className="w-6 sm:w-8 text-center font-semibold text-sm sm:text-base">{item.quantity}</span>
+                      <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => itemId !== undefined && updateQuantity(itemId, item.quantity - 1)}
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-200 transition-colors hover:bg-gray-300 sm:h-10 sm:w-10"
+                          >
+                            <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </button>
+                          <span className="w-6 sm:w-8 text-center font-semibold text-sm sm:text-base">{item.quantity}</span>
+                          <button
+                            type="button"
+                            onClick={() => itemId !== undefined && updateQuantity(itemId, item.quantity + 1)}
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-200 transition-colors hover:bg-gray-300 sm:h-10 sm:w-10"
+                          >
+                            <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="text-right w-full sm:w-auto flex justify-between sm:flex-col items-center sm:items-end gap-2 sm:gap-0">
+                        <p className="text-base sm:text-lg font-bold text-gray-800">
+                          {(item.price * item.quantity).toLocaleString()} FCFA
+                        </p>
                         <button
                           type="button"
-                          onClick={() => item.id !== undefined && updateQuantity(item.id, item.quantity + 1)}
-                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-200 transition-colors hover:bg-gray-300 sm:h-10 sm:w-10"
+                          onClick={() => itemId !== undefined && removeFromCart(itemId)}
+                          aria-label="Retirer du panier"
+                          className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-700"
                         >
-                          <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <X className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
                       </div>
                     </div>
-
-                    <div className="text-right w-full sm:w-auto flex justify-between sm:flex-col items-center sm:items-end gap-2 sm:gap-0">
-                      <p className="text-base sm:text-lg font-bold text-gray-800">
-                        {(item.price * item.quantity).toLocaleString()} FCFA
-                      </p>
-                    <button
-                      type="button"
-                      onClick={() => item.id !== undefined && removeFromCart(item.id)}
-                      aria-label="Retirer du panier"
-                      className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-700"
-                    >
-                        <X className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

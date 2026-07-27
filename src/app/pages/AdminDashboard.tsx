@@ -57,9 +57,9 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
-    price: 0,
-    stock: 1,
-    rating: 4.5,
+    price: '',
+    stock: '',
+    rating: '4.5',
     description: '',
     featured: false,
   });
@@ -91,7 +91,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
         type === 'checkbox'
           ? checked
           : name === 'price' || name === 'stock' || name === 'rating'
-            ? Number(value)
+            ? value
             : value,
     }));
   };
@@ -104,43 +104,33 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     }
 
     try {
-      if (editingProduct && (editingProduct._id || editingProduct.id)) {
-        await productsAPI.update(editingProduct._id ?? String(editingProduct.id), {
-          name: formData.name.trim(),
-          category: formData.category.trim(),
-          price: formData.price,
-          stock: formData.stock,
-          rating: formData.rating,
-          image: selectedImages[0],
-          images: selectedImages,
-          description: formData.description.trim(),
-          featured: formData.featured,
-        });
+      const productData = {
+        name: formData.name.trim(),
+        category: formData.category.trim(),
+        price: Number(formData.price) || 0,
+        stock: Number(formData.stock) || 0,
+        rating: Number(formData.rating) || 4.5,
+        image: selectedImages[0],
+        images: selectedImages,
+        description: formData.description.trim(),
+        featured: formData.featured,
+      };
 
+      if (editingProduct && (editingProduct._id || editingProduct.id)) {
+        await productsAPI.update(editingProduct._id ?? String(editingProduct.id), productData);
         setMessage('Produit modifié avec succès !');
         setEditingProduct(null);
       } else {
-        await productsAPI.create({
-          name: formData.name.trim(),
-          category: formData.category.trim(),
-          price: formData.price,
-          stock: formData.stock,
-          rating: formData.rating,
-          image: selectedImages[0],
-          images: selectedImages,
-          description: formData.description.trim(),
-          featured: formData.featured,
-        });
-
+        await productsAPI.create(productData);
         setMessage('Produit ajouté avec succès !');
       }
 
       setFormData({
         name: '',
         category: '',
-        price: 0,
-        stock: 1,
-        rating: 4.5,
+        price: '',
+        stock: '',
+        rating: '4.5',
         description: '',
         featured: false,
       });
@@ -172,9 +162,9 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     setFormData({
       name: product.name,
       category: product.category,
-      price: product.price,
-      stock: product.stock ?? 0,
-      rating: product.rating,
+      price: String(product.price),
+      stock: String(product.stock ?? 0),
+      rating: String(product.rating),
       description: product.description ?? '',
       featured: product.featured ?? false,
     });
@@ -799,9 +789,9 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                         setFormData({
                           name: '',
                           category: '',
-                          price: 0,
-                          stock: 1,
-                          rating: 4.5,
+                          price: '',
+                          stock: '',
+                          rating: '4.5',
                           description: '',
                           featured: false,
                         });
