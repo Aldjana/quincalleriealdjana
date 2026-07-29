@@ -1,10 +1,8 @@
+import { useNavigate } from 'react-router-dom';
 import { Wrench, Hammer, PackageSearch, TrendingUp, ArrowRight } from 'lucide-react';
 
-interface CategoriesSectionProps {
-  setCurrentPage: (page: string) => void;
-}
-
-export const CategoriesSection = ({ setCurrentPage }: CategoriesSectionProps) => {
+export const CategoriesSection = () => {
+  const navigate = useNavigate();
   return (
     <section className="bg-gradient-to-br from-white via-orange-50 to-white py-10 sm:py-16 lg:py-20">
       <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6">
@@ -20,7 +18,7 @@ export const CategoriesSection = ({ setCurrentPage }: CategoriesSectionProps) =>
         </div>
         
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-          <div className="flex flex-col items-center cursor-pointer group" onClick={() => setCurrentPage('products')}>
+          <div className="flex flex-col items-center cursor-pointer group" onClick={() => navigate('/products')}>
             <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg sm:shadow-xl mb-3 sm:mb-4 transition-all duration-300 group-hover:shadow-2xl group-hover:scale-105">
               <Hammer className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white" />
             </div>
@@ -30,7 +28,7 @@ export const CategoriesSection = ({ setCurrentPage }: CategoriesSectionProps) =>
             <span className="text-xs sm:text-sm text-gray-500 text-center mt-1">+150 modèles</span>
           </div>
           
-          <div className="flex flex-col items-center cursor-pointer group" onClick={() => setCurrentPage('products')}>
+          <div className="flex flex-col items-center cursor-pointer group" onClick={() => navigate('/products')}>
             <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg sm:shadow-xl mb-3 sm:mb-4 transition-all duration-300 group-hover:shadow-2xl group-hover:scale-105">
               <Hammer className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white" />
             </div>
@@ -38,7 +36,7 @@ export const CategoriesSection = ({ setCurrentPage }: CategoriesSectionProps) =>
             <span className="text-xs sm:text-sm text-gray-500 text-center mt-1">+80 modèles</span>
           </div>
           
-          <div className="flex flex-col items-center cursor-pointer group" onClick={() => setCurrentPage('products')}>
+          <div className="flex flex-col items-center cursor-pointer group" onClick={() => navigate('/products')}>
             <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-green-400 via-green-500 to-green-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg sm:shadow-xl mb-3 sm:mb-4 transition-all duration-300 group-hover:shadow-2xl group-hover:scale-105">
               <PackageSearch className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white" />
             </div>
@@ -46,7 +44,7 @@ export const CategoriesSection = ({ setCurrentPage }: CategoriesSectionProps) =>
             <span className="text-xs sm:text-sm text-gray-500 text-center mt-1">+120 modèles</span>
           </div>
           
-          <div className="flex flex-col items-center cursor-pointer group" onClick={() => setCurrentPage('products')}>
+          <div className="flex flex-col items-center cursor-pointer group" onClick={() => navigate('/products')}>
             <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-indigo-400 via-indigo-500 to-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg sm:shadow-xl mb-3 sm:mb-4 transition-all duration-300 group-hover:shadow-2xl group-hover:scale-105">
               <Wrench className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-white" />
             </div>
@@ -58,7 +56,7 @@ export const CategoriesSection = ({ setCurrentPage }: CategoriesSectionProps) =>
         <div className="text-center mt-8 sm:mt-10 lg:mt-12">
           <button
             type="button"
-            onClick={() => setCurrentPage('products')}
+            onClick={() => navigate('/products')}
             className="mx-auto flex min-h-12 w-full max-w-md items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-3 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:from-orange-600 hover:to-orange-700 hover:shadow-2xl sm:w-auto sm:px-8 sm:py-4 sm:text-base lg:text-lg"
           >
             <span>Voir toutes les catégories</span>

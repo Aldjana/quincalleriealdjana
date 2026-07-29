@@ -1,23 +1,13 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, Plus, Minus, X, ArrowRight, CreditCard, Loader2 } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { EMAILJS_CONFIG } from '../../config/emailjs';
-import { type Product } from '../../config/api';
+import { useCart } from '../context/CartContext';
 
-interface CartItem extends Product {
-  quantity: number;
-}
-
-interface CartPageProps {
-  cart: CartItem[];
-  setCurrentPage: (page: string) => void;
-  getTotalPrice: () => number;
-  removeFromCart: (id: string | number) => void;
-  updateQuantity: (id: string | number, quantity: number) => void;
-  clearCart: () => void;
-}
-
-export const CartPage = ({ cart, setCurrentPage, getTotalPrice, removeFromCart, updateQuantity, clearCart }: CartPageProps) => {
+export const CartPage = () => {
+  const navigate = useNavigate();
+  const { cart, removeFromCart, updateQuantity, clearCart, getTotalPrice } = useCart();
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -106,7 +96,7 @@ export const CartPage = ({ cart, setCurrentPage, getTotalPrice, removeFromCart, 
           <div className="text-center py-12 sm:py-16">
             <ShoppingCart className="w-16 h-16 sm:w-24 sm:h-24 text-gray-300 mx-auto mb-4" />
             <h2 className="text-xl sm:text-2xl text-gray-600 mb-4">Votre panier est vide</h2>
-            <button onClick={() => setCurrentPage('products')} className="px-6 sm:px-8 py-2 sm:py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm sm:text-base">
+            <button onClick={() => navigate('/products')} className="px-6 sm:px-8 py-2 sm:py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm sm:text-base">
               Continuer mes achats
             </button>
           </div>
@@ -201,7 +191,7 @@ export const CartPage = ({ cart, setCurrentPage, getTotalPrice, removeFromCart, 
                     <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>Commander</span>
                   </button>
-                  <button onClick={() => setCurrentPage('products')} className="w-full px-4 sm:px-6 py-2 sm:py-3 border border-orange-500 text-orange-500 rounded-lg hover:bg-orange-50 flex items-center justify-center gap-2 text-sm sm:text-base">
+                  <button onClick={() => navigate('/products')} className="w-full px-4 sm:px-6 py-2 sm:py-3 border border-orange-500 text-orange-500 rounded-lg hover:bg-orange-50 flex items-center justify-center gap-2 text-sm sm:text-base">
                     <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 rotate-180" />
                     <span>Continuer mes achats</span>
                   </button>

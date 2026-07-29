@@ -1,10 +1,8 @@
+import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, CreditCard, Shield, Truck, Award, Check } from 'lucide-react';
 
-interface HeroSectionProps {
-  setCurrentPage: (page: string) => void;
-}
-
-export const HeroSection = ({ setCurrentPage }: HeroSectionProps) => {
+export const HeroSection = () => {
+  const navigate = useNavigate();
   return (
     <section className="relative overflow-x-hidden bg-gradient-to-br from-orange-100 via-white to-blue-50">
       <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-blue-500/5" />
@@ -36,7 +34,7 @@ export const HeroSection = ({ setCurrentPage }: HeroSectionProps) => {
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
               <button
                 type="button"
-                onClick={() => setCurrentPage('products')}
+                onClick={() => navigate('/products')}
                 className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:from-orange-600 hover:to-orange-700 hover:shadow-xl sm:w-auto sm:px-8 sm:py-4 sm:text-base"
               >
                 <ShoppingCart className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
@@ -44,7 +42,7 @@ export const HeroSection = ({ setCurrentPage }: HeroSectionProps) => {
               </button>
               <button
                 type="button"
-                onClick={() => setCurrentPage('products')}
+                onClick={() => navigate('/products')}
                 className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-green-500 to-green-600 px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:from-green-600 hover:to-green-700 hover:shadow-xl sm:w-auto sm:px-8 sm:py-4 sm:text-base"
               >
                 <CreditCard className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />

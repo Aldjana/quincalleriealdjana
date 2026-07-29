@@ -1,25 +1,28 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Star, ShoppingCart, ShoppingBag, Check } from 'lucide-react';
 import { type Product } from '../../config/api';
 import { ProductGallery } from './ProductGallery';
+import { useCart } from '../context/CartContext';
 
 interface ProductsSectionProps {
   allProducts: Product[];
-  viewProductDetail: (product: Product) => void;
-  addToCart: (product: Product) => void;
 }
 
-export const ProductsSection = ({
-  allProducts,
-  viewProductDetail,
-  addToCart,
-}: ProductsSectionProps) => {
+export const ProductsSection = ({ allProducts }: ProductsSectionProps) => {
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
   const [showCartNotification, setShowCartNotification] = useState(false);
 
   const handleAddToCart = (product: Product) => {
     addToCart(product);
     setShowCartNotification(true);
     setTimeout(() => setShowCartNotification(false), 2000);
+  };
+
+  const viewProductDetail = (product: Product) => {
+    const productId = product._id || product.id;
+    navigate(`/product/${productId}`);
   };
 
   return (

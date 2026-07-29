@@ -1,17 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Filter, ShoppingCart, Star, ShoppingBag, X, Loader2 } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { EMAILJS_CONFIG } from '../../config/emailjs';
-import { type Product } from '../../config/api';
+import { productsAPI, type Product } from '../../config/api';
 import { ProductGallery } from '../components/ProductGallery';
+import { useCart } from '../context/CartContext';
 
-interface ProductsPageProps {
-  allProducts: Product[];
-  viewProductDetail: (product: Product) => void;
-  addToCart: (product: Product) => void;
-}
-
-export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: ProductsPageProps) => {
+export const ProductsPage = () => {
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showNotification, setShowNotification] = useState(false);
@@ -23,6 +23,44 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
     customerPhone: '',
     customerAddress: '',
   });
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      setIsLoading(true);
+      try {
+        const cachedProducts = localStorage.getItem('cached_products');
+        if (cachedProducts) {
+          const parsed = JSON.parse(cachedProducts);
+          setAllProducts(parsed);
+          setIsLoading(false);
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        const data = await productsAPI.getAll();
+        clearTimeout(timeoutId);
+        
+        setAllProducts(data);
+        localStorage.setItem('cached_products', JSON.stringify(data));
+      } catch (error) {
+        console.error('Erreur au chargement des produits :', error);
+        const cachedProducts = localStorage.getItem('cached_products');
+        if (cachedProducts) {
+          setAllProducts(JSON.parse(cachedProducts));
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
+
+  const viewProductDetail = (product: Product) => {
+    const productId = product._id || product.id;
+    navigate(`/product/${productId}`);
+  };
 
   const filteredProducts = allProducts.filter(
     (product) =>
@@ -82,6 +120,17 @@ export const ProductsPage = ({ allProducts, viewProductDetail, addToCart }: Prod
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  if (isLoading && allProducts.length === 0) {
+    return (
+      <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+          <p className="text-gray-600">Chargement des produits...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-w-0 flex-1 pb-12 sm:pb-16">

@@ -1,17 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Star, Truck, HeadphonesIcon, ShoppingCart, ChevronDown, ShoppingBag, X, Loader2 } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { EMAILJS_CONFIG } from '../../config/emailjs';
-import { type Product } from '../../config/api';
+import { productsAPI, type Product } from '../../config/api';
 import { ProductGallery } from '../components/ProductGallery';
+import { useCart } from '../context/CartContext';
 
-interface ProductDetailPageProps {
-  selectedProduct: Product | null;
-  setCurrentPage: (page: string) => void;
-  addToCart: (product: Product) => void;
-}
-
-export const ProductDetailPage = ({ selectedProduct, setCurrentPage, addToCart }: ProductDetailPageProps) => {
+export const ProductDetailPage = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
   const [showCartNotification, setShowCartNotification] = useState(false);
@@ -21,6 +22,41 @@ export const ProductDetailPage = ({ selectedProduct, setCurrentPage, addToCart }
     customerPhone: '',
     customerAddress: '',
   });
+
+  useEffect(() => {
+    const loadProduct = async () => {
+      if (!id) return;
+      setIsLoading(true);
+      try {
+        const cachedProducts = localStorage.getItem('cached_products');
+        if (cachedProducts) {
+          const parsed = JSON.parse(cachedProducts);
+          const product = parsed.find((p: Product) => (p._id || p.id) === id);
+          if (product) {
+            setSelectedProduct(product);
+            setIsLoading(false);
+          }
+        }
+
+        const data = await productsAPI.getById(id);
+        setSelectedProduct(data);
+      } catch (error) {
+        console.error('Erreur au chargement du produit :', error);
+        const cachedProducts = localStorage.getItem('cached_products');
+        if (cachedProducts) {
+          const parsed = JSON.parse(cachedProducts);
+          const product = parsed.find((p: Product) => (p._id || p.id) === id);
+          if (product) {
+            setSelectedProduct(product);
+          }
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProduct();
+  }, [id]);
 
   const handleAddToCart = () => {
     if (selectedProduct) {
@@ -74,13 +110,24 @@ export const ProductDetailPage = ({ selectedProduct, setCurrentPage, addToCart }
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+          <p className="text-gray-600">Chargement du produit...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!selectedProduct) return null;
 
   return (
     <div className="w-full min-w-0 flex-1 pb-12 sm:pb-16">
       <div className="mx-auto max-w-7xl px-3 py-6 sm:px-6 sm:py-10">
         <button
-          onClick={() => setCurrentPage('products')}
+          onClick={() => navigate('/products')}
           className="mb-4 flex items-center gap-2 text-gray-600 hover:text-orange-500 sm:mb-6"
         >
           <ChevronDown className="h-4 w-4 rotate-90 sm:h-5 sm:w-5" />
