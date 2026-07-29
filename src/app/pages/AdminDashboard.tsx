@@ -32,7 +32,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
-import { Link } from 'react-router';
+import { Link } from 'react-router-dom';
 import { productsAPI, type Product } from '../../config/api';
 import { LocalImagePicker } from '../components/LocalImagePicker';
 

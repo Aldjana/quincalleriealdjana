@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Lock, Mail, Wrench, ShieldCheck } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link } from 'react-router-dom';
 
 interface LoginPageProps {
   onLogin: (token: string) => void;

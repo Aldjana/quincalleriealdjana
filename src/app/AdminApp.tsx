@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { LoginPage } from './pages/LoginPage';
 import { AdminDashboard } from './pages/AdminDashboard';
 
