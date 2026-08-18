@@ -26,32 +26,32 @@ export const ProductDetailPage = () => {
   useEffect(() => {
     const loadProduct = async () => {
       if (!id) return;
-      setIsLoading(true);
-      try {
-        const cachedProducts = localStorage.getItem('cached_products');
-        if (cachedProducts) {
+
+      // 1. Charger d'abord le cache immédiatement
+      const cachedProducts = localStorage.getItem('cached_products');
+      if (cachedProducts) {
+        try {
           const parsed = JSON.parse(cachedProducts);
           const product = parsed.find((p: Product) => (p._id || p.id) === id);
           if (product) {
             setSelectedProduct(product);
             setIsLoading(false);
           }
+        } catch (e) {
+          console.error('Erreur lecture cache:', e);
         }
+      }
 
+      // 2. Charger les données fraîches en arrière-plan
+      try {
         const data = await productsAPI.getById(id);
         setSelectedProduct(data);
+        setIsLoading(false);
       } catch (error) {
         console.error('Erreur au chargement du produit :', error);
-        const cachedProducts = localStorage.getItem('cached_products');
-        if (cachedProducts) {
-          const parsed = JSON.parse(cachedProducts);
-          const product = parsed.find((p: Product) => (p._id || p.id) === id);
-          if (product) {
-            setSelectedProduct(product);
-          }
+        if (!cachedProducts) {
+          setIsLoading(false);
         }
-      } finally {
-        setIsLoading(false);
       }
     };
 

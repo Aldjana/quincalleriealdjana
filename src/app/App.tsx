@@ -42,31 +42,30 @@ function HomePage() {
 
   useEffect(() => {
     const loadProducts = async () => {
-      setIsLoading(true);
-      try {
-        const cachedProducts = localStorage.getItem('cached_products');
-        if (cachedProducts) {
+      // 1. Charger d'abord le cache immédiatement
+      const cachedProducts = localStorage.getItem('cached_products');
+      if (cachedProducts) {
+        try {
           const parsed = JSON.parse(cachedProducts);
           setProducts(parsed);
           setIsLoading(false);
+        } catch (e) {
+          console.error('Erreur lecture cache:', e);
         }
+      }
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-
+      // 2. Charger les données fraîches en arrière-plan
+      try {
         const data = await productsAPI.getAll();
-        clearTimeout(timeoutId);
-        
         setProducts(data);
         localStorage.setItem('cached_products', JSON.stringify(data));
+        setIsLoading(false);
       } catch (error) {
         console.error('Erreur au chargement des produits :', error);
-        const cachedProducts = localStorage.getItem('cached_products');
-        if (cachedProducts) {
-          setProducts(JSON.parse(cachedProducts));
+        // Si erreur et pas de cache, on reste en loading
+        if (!cachedProducts) {
+          setIsLoading(false);
         }
-      } finally {
-        setIsLoading(false);
       }
     };
 
