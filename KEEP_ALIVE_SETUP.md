@@ -23,9 +23,8 @@ Keep-Alive Backend Aldjana
 
 #### URL à ping
 ```
-https://votre-api.onrender.com/api/products
+https://quincalleriealdjana-1.onrender.com/api/products
 ```
-*(Remplacez `votre-api` par votre URL Render réelle)*
 
 #### Horaires (08:00 - 23:00)
 - **Type**: Every minute
@@ -43,19 +42,19 @@ Pour une meilleure fiabilité, créez 3 cron jobs différents :
 
 #### Job 1 - Produits
 ```
-URL: https://votre-api.onrender.com/api/products
+URL: https://quincalleriealdjana-1.onrender.com/api/products
 Horaires: 8h-23h, toutes les 14 minutes
 ```
 
 #### Job 2 - Health Check (si disponible)
 ```
-URL: https://votre-api.onrender.com/health
+URL: https://quincalleriealdjana-1.onrender.com/health
 Horaires: 8h-23h, toutes les 14 minutes
 ```
 
 #### Job 3 - Catégories
 ```
-URL: https://votre-api.onrender.com/api/categories
+URL: https://quincalleriealdjana-1.onrender.com/api/categories
 Horaires: 8h-23h, toutes les 14 minutes
 ```
 
