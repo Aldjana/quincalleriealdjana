@@ -1,6 +1,7 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { productsAPI, type Product } from '../config/api';
+import { initMetaPixel, metaPixelEvents } from '../config/metaPixel';
 
 // Import des composants
 import { Header } from './components/Header';
@@ -14,6 +15,7 @@ import { ProductsPage } from './pages/ProductsPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
 import { CartPage } from './pages/CartPage';
 import { ContactPage } from './pages/ContactPage';
+import { OrderConfirmationPage } from './pages/OrderConfirmationPage';
 import { CartProvider } from './context/CartContext';  
 
 interface AppLayoutProps {
@@ -94,8 +96,18 @@ function HomePage() {
 
 export default function App() {
   const location = useLocation();
-  const showFooter = !['/products', '/product', '/cart'].some(path => location.pathname.startsWith(path));
-  const mainClass = location.pathname === '/cart' || location.pathname === '/contact' ? 'bg-white' : 'bg-slate-50';
+  const showFooter = !['/products', '/product', '/cart', '/order-confirmation'].some(path => location.pathname.startsWith(path));
+  const mainClass = location.pathname === '/cart' || location.pathname === '/contact' || location.pathname === '/order-confirmation' ? 'bg-white' : 'bg-slate-50';
+
+  // Initialiser Meta Pixel au montage du composant
+  useEffect(() => {
+    initMetaPixel();
+  }, []);
+
+  // Tracker PageView à chaque changement de route
+  useEffect(() => {
+    metaPixelEvents.pageView();
+  }, [location.pathname]);
 
   return (
     <CartProvider>
@@ -106,6 +118,7 @@ export default function App() {
           <Route path="/product/:id" element={<ProductDetailPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
         </Routes>
       </AppLayout>
     </CartProvider>

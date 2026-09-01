@@ -4,6 +4,7 @@ import { Star, Truck, HeadphonesIcon, ShoppingCart, ChevronDown, ShoppingBag, X,
 import emailjs from '@emailjs/browser';
 import { EMAILJS_CONFIG } from '../../config/emailjs';
 import { productsAPI, type Product } from '../../config/api';
+import { metaPixelEvents } from '../../config/metaPixel';
 import { ProductGallery } from '../components/ProductGallery';
 import { useCart } from '../context/CartContext';
 
@@ -36,6 +37,8 @@ export const ProductDetailPage = () => {
           if (product) {
             setSelectedProduct(product);
             setIsLoading(false);
+            // Tracker ViewContent
+            metaPixelEvents.viewContent(product.name, String(product._id || product.id), product.price);
           }
         } catch (e) {
           console.error('Erreur lecture cache:', e);
@@ -47,6 +50,8 @@ export const ProductDetailPage = () => {
         const data = await productsAPI.getById(id);
         setSelectedProduct(data);
         setIsLoading(false);
+        // Tracker ViewContent
+        metaPixelEvents.viewContent(data.name, String(data._id || data.id), data.price);
       } catch (error) {
         console.error('Erreur au chargement du produit :', error);
         if (!cachedProducts) {
@@ -77,6 +82,9 @@ export const ProductDetailPage = () => {
     setIsSubmitting(true);
 
     try {
+      // Générer un ID de commande unique pour la déduplication
+      const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
       const orderDetails = `${selectedProduct.name} - Prix unitaire: ${selectedProduct.price.toLocaleString()} FCFA`;
 
       await emailjs.send(
@@ -94,10 +102,19 @@ export const ProductDetailPage = () => {
         EMAILJS_CONFIG.PUBLIC_KEY
       );
 
+      // Marquer que Purchase a été tracké pour éviter les doublons
+      sessionStorage.setItem('purchase_tracked', 'true');
+      
+      // Envoyer l'événement Purchase à Meta Pixel
+      metaPixelEvents.purchase(selectedProduct.price, orderId);
+
       setShowOrderForm(false);
       setShowNotification(true);
       setFormData({ customerName: '', customerPhone: '', customerAddress: '' });
       setTimeout(() => setShowNotification(false), 3000);
+      
+      // Rediriger vers la page de confirmation
+      navigate('/order-confirmation');
     } catch (error) {
       console.error("Erreur lors de l'envoi de l'email:", error);
       alert("Erreur lors de l'envoi de la commande. Veuillez réessayer.");

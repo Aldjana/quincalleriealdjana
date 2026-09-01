@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { type Product } from '../../config/api';
+import { metaPixelEvents } from '../../config/metaPixel';
 
 interface CartItem extends Product {
   quantity: number;
@@ -25,10 +26,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const productId = product._id || product.id;
       const existing = prev.find((item) => (item._id || item.id) === productId);
       if (existing) {
+        // Tracker AddToCart pour produit existant (augmentation quantité)
+        const productIdStr = String(productId);
+        metaPixelEvents.addToCart(product.name, productIdStr, product.price, 1);
+        
         return prev.map((item) =>
           (item._id || item.id) === productId ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
+
+      // Tracker AddToCart pour nouveau produit
+      const productIdStr = String(productId);
+      metaPixelEvents.addToCart(product.name, productIdStr, product.price, 1);
 
       return [...prev, { ...product, quantity: 1 }];
     });

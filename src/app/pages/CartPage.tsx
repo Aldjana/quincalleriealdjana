@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, Plus, Minus, X, ArrowRight, CreditCard, Loader2 } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { EMAILJS_CONFIG } from '../../config/emailjs';
+import { metaPixelEvents } from '../../config/metaPixel';
 import { useCart } from '../context/CartContext';
 
 export const CartPage = () => {
@@ -24,6 +25,10 @@ export const CartPage = () => {
       customerAddress: ''
     });
     setShowOrderForm(true);
+    
+    // Tracker InitiateCheckout
+    const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
+    metaPixelEvents.initiateCheckout(getTotalPrice(), totalItems);
   };
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
@@ -31,6 +36,9 @@ export const CartPage = () => {
     setIsSubmitting(true);
     
     try {
+      // Générer un ID de commande unique pour la déduplication
+      const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
       // Préparer les détails de la commande pour l'email
       const orderDetails = cart.map(item => 
         `${item.name} - Quantité: ${item.quantity} - Prix: ${item.price.toLocaleString()} FCFA - Total: ${(item.price * item.quantity).toLocaleString()} FCFA`
@@ -54,11 +62,21 @@ export const CartPage = () => {
         EMAILJS_CONFIG.PUBLIC_KEY
       );
       
+      // Marquer que Purchase a été tracké pour éviter les doublons
+      sessionStorage.setItem('purchase_tracked', 'true');
+      
+      // Envoyer l'événement Purchase à Meta Pixel
+      const totalAmount = getTotalPrice();
+      metaPixelEvents.purchase(totalAmount, orderId);
+      
       setShowNotification(true);
       setShowOrderForm(false);
       setTimeout(() => setShowNotification(false), 3000);
 
       clearCart();
+      
+      // Rediriger vers la page de confirmation
+      navigate('/order-confirmation');
       
     } catch (error) {
       console.error('Erreur détaillée lors de l\'envoi de l\'email:', error);
