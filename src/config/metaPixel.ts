@@ -12,7 +12,7 @@ declare global {
 
 export const META_PIXEL_CONFIG = {
   PIXEL_ID: import.meta.env.VITE_META_PIXEL_ID as string || '',
-  CURRENCY: 'XOF'
+  CURRENCY: 'USD' // Meta n'accepte pas XOF, on utilise USD pour le tracking
 };
 
 // Types pour les événements Meta Pixel
@@ -166,6 +166,7 @@ export const metaPixelEvents = {
       eventName: 'Purchase',
       parameters: {
         value: totalValue,
+        currency: 'USD', // Meta n'accepte pas XOF, on utilise USD pour le tracking
         eventID: orderId // Pour éviter les doublons
       }
     });

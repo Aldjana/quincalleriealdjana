@@ -11,7 +11,12 @@ L'intégration Meta Pixel a été ajoutée à votre boutique e-commerce avec les
 - **InitiateCheckout** : Tracké lors du clic sur "Commander"
 - **Purchase** : Tracké UNIQUEMENT après l'envoi réussi à EmailJS
 
-### 🔒 Sécurité et fiabilité
+### � Devise utilisée
+- **Devise Meta Pixel** : USD (Meta n'accepte pas XOF)
+- **Montants réels** : Gardés en FCFA dans votre système
+- **Conversion** : Les montants sont envoyés tels quels à Meta pour le tracking
+
+### �🔒 Sécurité et fiabilité
 - L'événement **Purchase** n'est déclenché qu'après confirmation de l'envoi EmailJS
 - Utilisation d'`eventID` unique pour éviter les doublons
 - Utilisation de `sessionStorage` pour empêcher le re-tracking au rechargement de la page
