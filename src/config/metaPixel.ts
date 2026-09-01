@@ -32,13 +32,11 @@ export interface MetaPixelEvent {
 // Initialiser le Meta Pixel
 export const initMetaPixel = () => {
   if (typeof window === 'undefined' || !META_PIXEL_CONFIG.PIXEL_ID) {
-    console.warn('Meta Pixel ID non configuré ou environnement non supporté');
     return;
   }
 
   // Vérifier si déjà initialisé pour éviter les doublons
   if (window.metaPixelInitialized) {
-    console.log('Meta Pixel déjà initialisé (flag)');
     return;
   }
 
@@ -67,24 +65,17 @@ export const initMetaPixel = () => {
       window.fbq('init', META_PIXEL_CONFIG.PIXEL_ID);
       window.fbq('track', 'PageView');
       window.metaPixelInitialized = true;
-      console.log('✅ Meta Pixel initialisé avec succès');
-    } else {
-      console.error('❌ Erreur: fbq non disponible après le chargement du script');
     }
   }, 100);
 };
 
 // Tracker un événement Meta Pixel
 export const trackMetaPixelEvent = ({ eventName, parameters }: MetaPixelEvent) => {
-  console.log('📊 trackMetaPixelEvent appelé:', { eventName, parameters });
-  
   if (typeof window === 'undefined') {
-    console.warn('Environnement non supporté (window undefined)');
     return;
   }
 
   if (!window.fbq) {
-    console.warn('Meta Pixel non initialisé (fbq non disponible), événement mis en file d\'attente');
     // Mettre en file d'attente pour quand fbq sera disponible
     setTimeout(() => {
       if (window.fbq) {
@@ -92,8 +83,7 @@ export const trackMetaPixelEvent = ({ eventName, parameters }: MetaPixelEvent) =
           currency: META_PIXEL_CONFIG.CURRENCY,
           ...parameters
         };
-        console.log('🎯 Envoi retardé à Meta Pixel:', eventName, eventParameters);
-        window.fbq('trackCustom', eventName, eventParameters);
+        window.fbq('track', eventName, eventParameters);
       }
     }, 500);
     return;
@@ -104,18 +94,12 @@ export const trackMetaPixelEvent = ({ eventName, parameters }: MetaPixelEvent) =
     currency: META_PIXEL_CONFIG.CURRENCY,
     ...parameters
   };
-
-  console.log('🎯 Envoi à Meta Pixel:', eventName, eventParameters);
   
   // Utiliser les événements standards Meta Pixel pour la production
-  // trackCustom est moins optimal pour les campagnes Meta Ads
   if (eventName === 'PageView') {
     window.fbq('track', 'PageView');
-    console.log('✅ PageView envoyé avec track standard');
   } else {
-    // Pour les autres événements, utiliser track standard
     window.fbq('track', eventName, eventParameters);
-    console.log('✅ Événement envoyé avec track standard:', eventName);
   }
 };
 
@@ -138,7 +122,6 @@ export const metaPixelEvents = {
   },
 
   addToCart: (productName: string, productId: string, price: number, quantity: number = 1) => {
-    console.log('🛒 Meta Pixel AddToCart appelé:', { productName, productId, price, quantity });
     trackMetaPixelEvent({
       eventName: 'AddToCart',
       parameters: {
