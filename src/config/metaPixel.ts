@@ -107,18 +107,15 @@ export const trackMetaPixelEvent = ({ eventName, parameters }: MetaPixelEvent) =
 
   console.log('🎯 Envoi à Meta Pixel:', eventName, eventParameters);
   
-  // Pour localhost, utiliser trackCustom pour tous les événements sauf PageView
+  // Utiliser les événements standards Meta Pixel pour la production
+  // trackCustom est moins optimal pour les campagnes Meta Ads
   if (eventName === 'PageView') {
     window.fbq('track', 'PageView');
     console.log('✅ PageView envoyé avec track standard');
   } else {
-    // Ajouter le test_event_code pour forcer l'apparition dans Test Events
-    const testParameters = {
-      ...eventParameters,
-      test_event_code: 'TEST14815'
-    };
-    window.fbq('trackCustom', eventName, testParameters);
-    console.log('✅ Événement envoyé avec trackCustom + test_event_code');
+    // Pour les autres événements, utiliser track standard
+    window.fbq('track', eventName, eventParameters);
+    console.log('✅ Événement envoyé avec track standard:', eventName);
   }
 };
 
