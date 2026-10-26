@@ -79,7 +79,12 @@ export const Footer = () => (
 
     <div className="border-t border-white/10">
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-slate-500 sm:flex-row lg:px-6">
-        <p>© {new Date().getFullYear()} {SHOP.name}. Tous droits réservés.</p>
+        <p>
+          © {new Date().getFullYear()} {SHOP.name}. Tous droits réservés. ·{' '}
+          <Link to="/confidentialite" className="hover:text-slate-300">
+            Confidentialité
+          </Link>
+        </p>
         <p>Paiement à la livraison · Livraison partout au Sénégal</p>
       </div>
     </div>

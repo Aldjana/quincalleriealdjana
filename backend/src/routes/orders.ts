@@ -18,7 +18,7 @@ function generateOrderNumber(): string {
 }
 
 // Création publique : les prix et noms sont relus en base, jamais pris du navigateur
-router.post('/', rateLimit({ windowMs: 15 * 60 * 1000, max: 10 }), async (req, res) => {
+router.post('/', rateLimit({ windowMs: 15 * 60 * 1000, max: 20 }), async (req, res) => {
   try {
     const body = req.body ?? {};
     const customer = {
