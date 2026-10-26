@@ -32,6 +32,8 @@ export const ProductGallery = ({ product, variant = 'detail' }: ProductGalleryPr
       <img
         src={activeImage}
         alt={product.name}
+        loading="lazy"
+        decoding="async"
         className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
       />
     );
@@ -86,7 +88,7 @@ export const ProductGallery = ({ product, variant = 'detail' }: ProductGalleryPr
                   : 'border-slate-200 opacity-70 hover:opacity-100'
               }`}
             >
-              <img src={img} alt="" className="h-full w-full object-cover" />
+              <img src={img} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
             </button>
           ))}
         </div>

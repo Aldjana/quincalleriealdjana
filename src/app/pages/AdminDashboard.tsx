@@ -71,7 +71,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const data = await productsAPI.getAll();
+      const data = await productsAPI.getAll({ fresh: true });
       setProducts(data);
       setError('');
     } catch (err) {

@@ -1,18 +1,8 @@
-import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, ShoppingBag, ArrowRight, Home } from 'lucide-react';
+import { CheckCircle, ShoppingBag, Home } from 'lucide-react';
 
 export const OrderConfirmationPage = () => {
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Empêcher le tracking de Purchase au rechargement de la page
-    // L'événement a déjà été envoyé avant la redirection
-    const hasTrackedPurchase = sessionStorage.getItem('purchase_tracked');
-    if (hasTrackedPurchase) {
-      sessionStorage.removeItem('purchase_tracked');
-    }
-  }, []);
 
   return (
     <div className="w-full min-w-0 flex-1 pb-12 sm:pb-16">

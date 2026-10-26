@@ -1,17 +1,26 @@
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import Product from '../models/Product.js';
 import { isUsingFileStore } from '../db/connection.js';
 import { fileStore } from '../store/fileStore.js';
+import { requireAdmin } from '../middleware/auth.js';
+import { parseProductInput, type ProductInput } from '../utils/productInput.js';
 
 const router = Router();
 
+// Cache court côté navigateur/CDN : la boutique reste réactive sans surcharger le serveur
+const PUBLIC_CACHE = 'public, max-age=60, stale-while-revalidate=300';
+
+function isValidId(id: string): boolean {
+  return isUsingFileStore() ? id.length > 0 : mongoose.isValidObjectId(id);
+}
+
 router.get('/', async (_req, res) => {
   try {
-    if (isUsingFileStore()) {
-      return res.json(await fileStore.getAll());
-    }
-    const products = await Product.find().sort({ createdAt: -1 });
-    res.json(products);
+    const products = isUsingFileStore()
+      ? await fileStore.getAll()
+      : await Product.find().sort({ createdAt: -1 }).lean();
+    res.set('Cache-Control', PUBLIC_CACHE).json(products);
   } catch (error) {
     console.error('Erreur GET /api/products', error);
     res.status(500).json({ error: 'Impossible de récupérer les produits.' });
@@ -20,105 +29,61 @@ router.get('/', async (_req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    if (isUsingFileStore()) {
-      const product = await fileStore.getById(req.params.id);
-      if (!product) return res.status(404).json({ error: 'Produit introuvable.' });
-      return res.json(product);
-    }
+    const { id } = req.params;
+    if (!isValidId(id)) return res.status(404).json({ error: 'Produit introuvable.' });
 
-    const product = await Product.findById(req.params.id);
-    if (!product) {
-      return res.status(404).json({ error: 'Produit introuvable.' });
-    }
-    res.json(product);
+    const product = isUsingFileStore() ? await fileStore.getById(id) : await Product.findById(id).lean();
+    if (!product) return res.status(404).json({ error: 'Produit introuvable.' });
+
+    res.set('Cache-Control', PUBLIC_CACHE).json(product);
   } catch (error) {
     console.error('Erreur GET /api/products/:id', error);
     res.status(500).json({ error: 'Impossible de récupérer le produit.' });
   }
 });
 
-const DEFAULT_IMAGE =
-  'https://images.unsplash.com/photo-1581093616143-1b29f99148d6?auto=format&fit=crop&w=800&q=85';
-
-function normalizeProductImages(body: { image?: string; images?: string[] }) {
-  const images = (body.images?.length ? body.images : body.image ? [body.image] : [])
-    .map((url) => url?.trim())
-    .filter(Boolean) as string[];
-
-  const resolved = images.length > 0 ? images : [DEFAULT_IMAGE];
-  return { image: resolved[0], images: resolved };
-}
-
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
   try {
-    const { name, category, price, stock, rating, description, featured } = req.body;
-    if (!name?.trim() || !category?.trim() || price == null || Number.isNaN(price)) {
-      return res.status(400).json({ error: 'name, category et price sont obligatoires.' });
-    }
+    const parsed = parseProductInput(req.body, { partial: false });
+    if (!parsed.ok) return res.status(400).json({ error: parsed.error });
 
-    const { image, images } = normalizeProductImages(req.body);
-
-    const payload = {
-      name,
-      category,
-      price,
-      stock: stock ?? 0,
-      rating: rating ?? 4.5,
-      image,
-      images,
-      description: description || '',
-      featured: featured ?? false,
-    };
-
-    if (isUsingFileStore()) {
-      const saved = await fileStore.create(payload);
-      return res.status(201).json(saved);
-    }
-
-    const newProduct = new Product(payload);
-    const savedProduct = await newProduct.save();
-    res.status(201).json(savedProduct);
+    const payload = parsed.data as Required<ProductInput>;
+    const saved = isUsingFileStore() ? await fileStore.create(payload) : await Product.create(payload);
+    res.status(201).json(saved);
   } catch (error) {
     console.error('Erreur POST /api/products', error);
     res.status(500).json({ error: 'Impossible de créer le produit.' });
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAdmin, async (req, res) => {
   try {
-    if (isUsingFileStore()) {
-      const updated = await fileStore.update(req.params.id, req.body);
-      if (!updated) return res.status(404).json({ error: 'Produit introuvable.' });
-      return res.json(updated);
-    }
+    const { id } = req.params;
+    if (!isValidId(id)) return res.status(404).json({ error: 'Produit introuvable.' });
 
-    const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const parsed = parseProductInput(req.body, { partial: true });
+    if (!parsed.ok) return res.status(400).json({ error: parsed.error });
 
-    if (!updatedProduct) {
-      return res.status(404).json({ error: 'Produit introuvable.' });
-    }
-    res.json(updatedProduct);
+    const updated = isUsingFileStore()
+      ? await fileStore.update(id, parsed.data)
+      : await Product.findByIdAndUpdate(id, parsed.data, { new: true, runValidators: true }).lean();
+
+    if (!updated) return res.status(404).json({ error: 'Produit introuvable.' });
+    res.json(updated);
   } catch (error) {
     console.error('Erreur PUT /api/products/:id', error);
     res.status(500).json({ error: 'Impossible de mettre à jour le produit.' });
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
-    if (isUsingFileStore()) {
-      const deleted = await fileStore.delete(req.params.id);
-      if (!deleted) return res.status(404).json({ error: 'Produit introuvable.' });
-      return res.json({ message: 'Produit supprimé.' });
-    }
+    const { id } = req.params;
+    if (!isValidId(id)) return res.status(404).json({ error: 'Produit introuvable.' });
 
-    const deletedProduct = await Product.findByIdAndDelete(req.params.id);
-    if (!deletedProduct) {
-      return res.status(404).json({ error: 'Produit introuvable.' });
-    }
+    const deleted = isUsingFileStore() ? await fileStore.delete(id) : await Product.findByIdAndDelete(id);
+    if (!deleted) return res.status(404).json({ error: 'Produit introuvable.' });
+
     res.json({ message: 'Produit supprimé.' });
   } catch (error) {
     console.error('Erreur DELETE /api/products/:id', error);

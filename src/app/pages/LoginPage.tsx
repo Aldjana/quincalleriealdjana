@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Lock, Mail, Wrench, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { adminSession, authAPI } from '../../config/api';
 
 interface LoginPageProps {
   onLogin: (token: string) => void;
@@ -18,25 +19,11 @@ export const LoginPage = ({ onLogin }: LoginPageProps) => {
     setLoading(true);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-      const response = await fetch(`${apiUrl}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        localStorage.setItem('adminToken', data.token);
-        onLogin(data.token);
-      } else {
-        setError(data.message || 'Email ou mot de passe incorrect');
-      }
+      const data = await authAPI.login(email, password);
+      adminSession.setToken(data.token);
+      onLogin(data.token);
     } catch (err) {
-      setError('Erreur de connexion au serveur');
+      setError(err instanceof Error ? err.message : 'Erreur de connexion au serveur');
     } finally {
       setLoading(false);
     }

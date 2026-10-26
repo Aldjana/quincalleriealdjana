@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { FolderOpen, X, Loader2 } from 'lucide-react';
+import { uploadAPI } from '../../config/api';
 
 interface LocalImagePickerProps {
   selected: string[];
@@ -10,24 +11,6 @@ interface LocalImagePickerProps {
 export const LocalImagePicker = ({ selected, onChange, max = 6 }: LocalImagePickerProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-
-  const uploadImage = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append('image', file);
-
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-    const response = await fetch(`${apiUrl}/api/upload/single`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error('Erreur lors de l\'upload');
-    }
-
-    const data = await response.json();
-    return data.imageUrl;
-  };
 
   const handleFiles = async (files: FileList | null) => {
     if (!files?.length) return;
@@ -41,11 +24,11 @@ export const LocalImagePicker = ({ selected, onChange, max = 6 }: LocalImagePick
 
     setUploading(true);
     try {
-      const uploadedUrls = await Promise.all(toUpload.map(uploadImage));
+      const uploadedUrls = await Promise.all(toUpload.map(uploadAPI.uploadImage));
       onChange([...selected, ...uploadedUrls]);
     } catch (error) {
       console.error('Erreur upload:', error);
-      alert('Erreur lors de l\'upload des images');
+      alert(error instanceof Error ? error.message : "Erreur lors de l'upload des images");
     } finally {
       setUploading(false);
     }

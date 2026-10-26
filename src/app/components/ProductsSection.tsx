@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, ShoppingCart, ShoppingBag, Check } from 'lucide-react';
-import { type Product } from '../../config/api';
+import { getProductId, type Product } from '../../config/api';
 import { ProductGallery } from './ProductGallery';
 import { useCart } from '../context/CartContext';
 
@@ -20,10 +20,7 @@ export const ProductsSection = ({ allProducts }: ProductsSectionProps) => {
     setTimeout(() => setShowCartNotification(false), 2000);
   };
 
-  const viewProductDetail = (product: Product) => {
-    const productId = product._id || product.id;
-    navigate(`/product/${productId}`);
-  };
+  const viewProductDetail = (product: Product) => navigate(`/product/${getProductId(product)}`);
 
   return (
     <section className="bg-gradient-to-b from-slate-50 via-white to-slate-50/80 py-12 sm:py-16 lg:py-24">
@@ -41,7 +38,7 @@ export const ProductsSection = ({ allProducts }: ProductsSectionProps) => {
             const inStock = product.stock === undefined || product.stock > 0;
             return (
               <article
-                key={product._id || product.id}
+                key={getProductId(product)}
                 className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
               >
                 <button

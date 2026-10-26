@@ -35,5 +35,8 @@ const productSchema = new mongoose.Schema<ProductDocument>(
   }
 );
 
+// Accélère le tri du catalogue (GET /api/products)
+productSchema.index({ createdAt: -1 });
+
 const Product = mongoose.model<ProductDocument>('Product', productSchema);
 export default Product;

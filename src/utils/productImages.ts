@@ -12,14 +12,3 @@ export function getProductImages(product: Product): string[] {
   }
   return [DEFAULT_IMAGE];
 }
-
-export function getProductMainImage(product: Product): string {
-  return getProductImages(product)[0];
-}
-
-export function parseImageUrls(text: string): string[] {
-  return text
-    .split(/[\n,]+/)
-    .map((url) => url.trim())
-    .filter(Boolean);
-}
