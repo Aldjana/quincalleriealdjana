@@ -8,7 +8,6 @@ import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
 import { CategoriesSection } from './components/CategoriesSection';
 import { ProductsSection } from './components/ProductsSection';
-import { WhyUsSection } from './components/WhyUsSection';
 import { Footer } from './components/Footer';
 import { WhatsAppButton } from './components/WhatsAppButton';
 import { PageLoader } from './components/PageLoader';
@@ -47,7 +46,6 @@ function HomePage() {
       <HeroSection />
       <CategoriesSection products={products} />
       <ProductsSection allProducts={products} isLoading={isLoading} />
-      <WhyUsSection />
     </>
   );
 }
