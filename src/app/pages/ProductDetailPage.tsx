@@ -121,7 +121,10 @@ export const ProductDetailPage = () => {
             </div>
             <button
               type="button"
-              onClick={() => setShowOrderForm(true)}
+              onClick={() => {
+                setShowOrderForm(true);
+                metaPixelEvents.initiateCheckout(product.price * quantity, quantity);
+              }}
               disabled={!inStock}
               className="flex h-12 w-full items-center justify-center rounded-lg bg-navy-800 text-sm font-semibold text-white transition hover:bg-navy-900 disabled:cursor-not-allowed disabled:bg-slate-300"
             >

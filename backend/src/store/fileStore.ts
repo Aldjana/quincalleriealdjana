@@ -17,6 +17,7 @@ export interface StoredProduct {
   rating: number;
   stock?: number;
   featured?: boolean;
+  active?: boolean;
   createdAt: string;
   updatedAt: string;
 }

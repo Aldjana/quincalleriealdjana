@@ -20,7 +20,7 @@ export const META_PIXEL_CONFIG = {
 
 export const fcfaToPixelValue = (amountFcfa: number) => Math.round((amountFcfa / XOF_PER_EUR) * 100) / 100;
 
-type StandardEvent = 'PageView' | 'ViewContent' | 'AddToCart' | 'InitiateCheckout' | 'Purchase';
+type StandardEvent = 'PageView' | 'ViewContent' | 'AddToCart' | 'InitiateCheckout' | 'Purchase' | 'Contact';
 
 let initialized = false;
 
@@ -53,7 +53,7 @@ export const initMetaPixel = () => {
 const track = (eventName: StandardEvent, parameters?: Record<string, unknown>, eventID?: string) => {
   if (!initialized || !window.fbq) return;
   const options = eventID ? { eventID } : undefined;
-  if (eventName === 'PageView') window.fbq('track', 'PageView');
+  if (eventName === 'PageView' || (eventName === 'Contact' && !parameters)) window.fbq('track', eventName);
   else window.fbq('track', eventName, { currency: META_PIXEL_CONFIG.CURRENCY, ...parameters }, options);
 };
 
@@ -76,6 +76,9 @@ export const metaPixelEvents = {
       value: fcfaToPixelValue(priceFcfa * quantity),
       num_items: quantity,
     }),
+
+  // Clic sur un lien WhatsApp ou téléphone : beaucoup de commandes passent par là
+  contact: () => track('Contact'),
 
   initiateCheckout: (totalFcfa: number, numItems: number) =>
     track('InitiateCheckout', { value: fcfaToPixelValue(totalFcfa), num_items: numItems }),

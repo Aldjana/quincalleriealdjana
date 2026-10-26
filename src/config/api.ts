@@ -12,6 +12,8 @@ export interface Product {
   rating: number;
   stock?: number;
   featured?: boolean;
+  /** false = masqué de la boutique */
+  active?: boolean;
 }
 
 export const getProductId = (product: Product): string => String(product._id ?? product.id ?? '');
@@ -85,6 +87,14 @@ export const productsAPI = {
     request<Product[]>(
       '/api/products',
       options.fresh ? { cache: 'no-store' } : {},
+      'Erreur lors de la récupération des produits'
+    ),
+
+  /** Admin : tous les produits, y compris ceux désactivés */
+  getAllAdmin: () =>
+    request<Product[]>(
+      '/api/products/admin/all',
+      { auth: true, cache: 'no-store' },
       'Erreur lors de la récupération des produits'
     ),
 

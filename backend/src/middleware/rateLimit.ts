@@ -1,5 +1,13 @@
 import type { NextFunction, Request, Response } from 'express';
 
+// Render passe par Cloudflare : sans cet en-tête, tous les visiteurs pourraient
+// partager la même IP (celle du proxy) et se bloquer mutuellement.
+function clientKey(req: Request): string {
+  const cfIp = req.headers['cf-connecting-ip'];
+  if (typeof cfIp === 'string' && cfIp) return cfIp;
+  return req.ip ?? 'unknown';
+}
+
 interface Bucket {
   count: number;
   resetAt: number;
@@ -11,7 +19,7 @@ export function rateLimit({ windowMs, max }: { windowMs: number; max: number }) 
 
   return (req: Request, res: Response, next: NextFunction) => {
     const now = Date.now();
-    const key = req.ip ?? 'unknown';
+    const key = clientKey(req);
     let bucket = buckets.get(key);
 
     if (!bucket || bucket.resetAt <= now) {

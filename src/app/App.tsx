@@ -24,6 +24,7 @@ const ContactPage = lazy(() => import('./pages/ContactPage').then((m) => ({ defa
 const OrderConfirmationPage = lazy(() =>
   import('./pages/OrderConfirmationPage').then((m) => ({ default: m.OrderConfirmationPage }))
 );
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then((m) => ({ default: m.PrivacyPage })));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
 
 function AppLayout({ children }: { children: ReactNode }) {
@@ -66,6 +67,17 @@ export default function App() {
     initMetaPixel();
   }, []);
 
+  // Tracker les clics vers WhatsApp et le téléphone, où qu'ils soient sur le site
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const link = (e.target as Element | null)?.closest?.('a[href]');
+      const href = link?.getAttribute('href') ?? '';
+      if (href.startsWith('https://wa.me/') || href.startsWith('tel:')) metaPixelEvents.contact();
+    };
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
+  }, []);
+
   // Tracker PageView à chaque changement de route
   useEffect(() => {
     metaPixelEvents.pageView();
@@ -84,6 +96,7 @@ export default function App() {
               <Route path="/cart" element={<CartPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+              <Route path="/confidentialite" element={<PrivacyPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Suspense>

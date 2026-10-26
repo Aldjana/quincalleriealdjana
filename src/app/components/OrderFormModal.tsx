@@ -126,6 +126,12 @@ export const OrderFormModal = ({ title, summary, isSubmitting, onSubmit, onClose
             <ShieldCheck className="h-4 w-4 text-emerald-600" />
             Aucun paiement en ligne — nous vous appelons pour confirmer.
           </p>
+          <p className="text-center text-[11px] text-slate-400">
+            Vos coordonnées servent uniquement à traiter la commande.{' '}
+            <a href="/confidentialite" target="_blank" rel="noreferrer" className="underline hover:text-slate-600">
+              Confidentialité
+            </a>
+          </p>
         </form>
       </div>
     </div>
