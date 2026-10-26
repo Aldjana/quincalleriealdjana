@@ -12,7 +12,7 @@ L'intégration Meta Pixel a été ajoutée à votre boutique e-commerce avec les
 - **Purchase** : Tracké UNIQUEMENT après l'envoi réussi à EmailJS
 
 ### � Devise utilisée
-- **Devise Meta Pixel** : USD (Meta n'accepte pas XOF)
+- **Devise Meta Pixel** : EUR — les montants FCFA sont convertis au taux fixe 1 EUR = 655,957 FCFA (Meta n'accepte pas XOF)
 - **Montants réels** : Gardés en FCFA dans votre système
 - **Conversion** : Les montants sont envoyés tels quels à Meta pour le tracking
 
@@ -109,7 +109,7 @@ Dans votre dashboard Vercel :
 
 ## 📊 Devise configurée
 
-- **Devise** : `XOF` (Franc CFA Ouest Africain)
+- **Devise** : `EUR` (montants convertis depuis le FCFA au taux fixe 655,957)
 - **Montants** : Calculés automatiquement depuis votre système existant
 
 ## 🚨 Points importants

@@ -1,127 +1,83 @@
-import { Router } from 'express';
+import { Router, type NextFunction, type Request, type Response } from 'express';
 import multer from 'multer';
-import { v2 as cloudinary } from 'cloudinary';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import cloudinary from '../config/cloudinary.js';
+import { requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
-// Configuration de Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// Configuration du stockage en mémoire (pour Cloudinary)
-const storage = multer.memoryStorage();
-
-// Filtre pour accepter uniquement les images
-const fileFilter = (req: any, file: any, cb: any) => {
-  if (file.mimetype.startsWith('image/')) {
-    cb(null, true);
-  } else {
-    cb(new Error('Seuls les fichiers image sont autorisés'), false);
-  }
-};
-
 const upload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB max
-  }
+  storage: multer.memoryStorage(),
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Seuls les fichiers image sont autorisés'));
+  },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 Mo max
 });
 
-// Endpoint pour uploader une seule image
-router.post('/single', upload.single('image'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'Aucun fichier uploadé' });
-    }
+interface UploadResult {
+  imageUrl: string;
+  publicId: string;
+  filename: string;
+}
 
-    // Upload vers Cloudinary
-    const result = await cloudinary.uploader.upload_stream(
+function uploadToCloudinary(file: Express.Multer.File): Promise<UploadResult> {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
       {
-        resource_type: 'auto',
+        resource_type: 'image',
         folder: 'ma-boutique/products',
-        transformation: [
-          { quality: 'auto', fetch_format: 'auto' },
-          { width: 800, crop: 'limit' }
-        ]
+        transformation: [{ quality: 'auto', fetch_format: 'auto' }, { width: 800, crop: 'limit' }],
       },
       (error, result) => {
-        if (error) {
-          console.error('Erreur Cloudinary:', error);
-          return res.status(500).json({ error: 'Erreur lors de l\'upload' });
-        }
-        
-        if (!result) {
-          return res.status(500).json({ error: 'Erreur lors de l\'upload' });
-        }
-
-        res.json({ 
-          imageUrl: result.secure_url, 
-          publicId: result.public_id,
-          filename: req.file?.originalname 
-        });
+        if (error || !result) return reject(error ?? new Error('Upload échoué'));
+        resolve({ imageUrl: result.secure_url, publicId: result.public_id, filename: file.originalname });
       }
     );
+    stream.end(file.buffer);
+  });
+}
 
-    // Envoyer le buffer vers Cloudinary
-    result.end(req.file.buffer);
+// Transforme les erreurs multer (taille, type) en réponse JSON lisible
+function handleMulter(middleware: ReturnType<typeof upload.single>) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    middleware(req, res, (err?: unknown) => {
+      if (!err) return next();
+      const message =
+        err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE'
+          ? 'Image trop lourde (5 Mo maximum).'
+          : err instanceof Error
+            ? err.message
+            : "Erreur lors de l'upload";
+      res.status(400).json({ error: message });
+    });
+  };
+}
+
+router.post('/single', requireAdmin, handleMulter(upload.single('image')), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Aucun fichier uploadé' });
+
+  try {
+    res.json(await uploadToCloudinary(req.file));
   } catch (error) {
-    console.error('Erreur upload:', error);
-    res.status(500).json({ error: 'Erreur lors de l\'upload' });
+    console.error('Erreur Cloudinary:', error);
+    res.status(500).json({ error: "Erreur lors de l'upload" });
   }
 });
 
-// Endpoint pour uploader plusieurs images
-router.post('/multiple', upload.array('images', 6), async (req, res) => {
+router.post('/multiple', requireAdmin, handleMulter(upload.array('images', 6)), async (req, res) => {
+  const files = Array.isArray(req.files) ? req.files : [];
+  if (files.length === 0) return res.status(400).json({ error: 'Aucun fichier uploadé' });
+
   try {
-    if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
-      return res.status(400).json({ error: 'Aucun fichier uploadé' });
-    }
-
-    const uploadPromises = req.files.map((file: any) => {
-      return new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          {
-            resource_type: 'auto',
-            folder: 'ma-boutique/products',
-            transformation: [
-              { quality: 'auto', fetch_format: 'auto' },
-              { width: 800, crop: 'limit' }
-            ]
-          },
-          (error, result) => {
-            if (error) {
-              reject(error);
-            } else if (!result) {
-              reject(new Error('Upload failed'));
-            } else {
-              resolve({
-                imageUrl: result.secure_url,
-                publicId: result.public_id,
-                filename: file.originalname
-              });
-            }
-          }
-        );
-        uploadStream.end(file.buffer);
-      });
-    });
-
-    const results = await Promise.all(uploadPromises);
-    res.json({ 
-      imageUrls: results.map((r: any) => r.imageUrl),
-      publicIds: results.map((r: any) => r.publicId),
-      filenames: results.map((r: any) => r.filename)
+    const results = await Promise.all(files.map(uploadToCloudinary));
+    res.json({
+      imageUrls: results.map((r) => r.imageUrl),
+      publicIds: results.map((r) => r.publicId),
+      filenames: results.map((r) => r.filename),
     });
   } catch (error) {
     console.error('Erreur upload multiple:', error);
-    res.status(500).json({ error: 'Erreur lors de l\'upload' });
+    res.status(500).json({ error: "Erreur lors de l'upload" });
   }
 });
 

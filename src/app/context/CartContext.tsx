@@ -1,8 +1,8 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { type Product } from '../../config/api';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { getProductId, type Product } from '../../config/api';
 import { metaPixelEvents } from '../../config/metaPixel';
 
-interface CartItem extends Product {
+export interface CartItem extends Product {
   quantity: number;
 }
 
@@ -12,76 +12,86 @@ interface CartContextType {
   removeFromCart: (productId: string | number) => void;
   updateQuantity: (productId: string | number, quantity: number) => void;
   clearCart: () => void;
+  totalItems: number;
+  totalPrice: number;
   getTotalItems: () => number;
   getTotalPrice: () => number;
 }
 
+const CART_STORAGE_KEY = 'cart';
+
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export function CartProvider({ children }: { children: ReactNode }) {
-  const [cart, setCart] = useState<CartItem[]>([]);
+function loadCart(): CartItem[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) ?? '[]');
+    return Array.isArray(parsed) ? parsed.filter((item) => item && item.quantity > 0) : [];
+  } catch {
+    return [];
+  }
+}
 
-  const addToCart = (product: Product) => {
+export function CartProvider({ children }: { children: ReactNode }) {
+  // Le panier survit au rechargement de la page
+  const [cart, setCart] = useState<CartItem[]>(loadCart);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+    } catch {
+      /* stockage indisponible */
+    }
+  }, [cart]);
+
+  const addToCart = useCallback((product: Product) => {
+    const productId = getProductId(product);
+    // Tracking hors du setState : React peut rejouer la fonction de mise à jour
+    metaPixelEvents.addToCart(product.name, productId, product.price, 1);
+
     setCart((prev) => {
-      const productId = product._id || product.id;
-      const existing = prev.find((item) => (item._id || item.id) === productId);
+      const existing = prev.find((item) => getProductId(item) === productId);
       if (existing) {
-        // Tracker AddToCart pour produit existant (augmentation quantité)
-        const productIdStr = String(productId);
-        metaPixelEvents.addToCart(product.name, productIdStr, product.price, 1);
-        
         return prev.map((item) =>
-          (item._id || item.id) === productId ? { ...item, quantity: item.quantity + 1 } : item
+          getProductId(item) === productId ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
-
-      // Tracker AddToCart pour nouveau produit
-      const productIdStr = String(productId);
-      metaPixelEvents.addToCart(product.name, productIdStr, product.price, 1);
-
       return [...prev, { ...product, quantity: 1 }];
     });
-  };
+  }, []);
 
-  const removeFromCart = (productId: string | number) => {
-    setCart((prev) => prev.filter((item) => (item._id || item.id) !== productId));
-  };
+  const removeFromCart = useCallback((productId: string | number) => {
+    const id = String(productId);
+    setCart((prev) => prev.filter((item) => getProductId(item) !== id));
+  }, []);
 
-  const updateQuantity = (productId: string | number, quantity: number) => {
-    setCart((prev) => {
-      if (quantity < 1) {
-        return prev.filter((item) => (item._id || item.id) !== productId);
-      }
+  const updateQuantity = useCallback((productId: string | number, quantity: number) => {
+    const id = String(productId);
+    setCart((prev) =>
+      quantity < 1
+        ? prev.filter((item) => getProductId(item) !== id)
+        : prev.map((item) => (getProductId(item) === id ? { ...item, quantity } : item))
+    );
+  }, []);
 
-      return prev.map((item) =>
-        (item._id || item.id) === productId ? { ...item, quantity } : item
-      );
-    });
-  };
+  const clearCart = useCallback(() => setCart([]), []);
 
-  const clearCart = () => {
-    setCart([]);
-  };
+  const value = useMemo(() => {
+    const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
+    const totalPrice = cart.reduce((total, item) => total + item.price * item.quantity, 0);
+    return {
+      cart,
+      addToCart,
+      removeFromCart,
+      updateQuantity,
+      clearCart,
+      totalItems,
+      totalPrice,
+      getTotalItems: () => totalItems,
+      getTotalPrice: () => totalPrice,
+    };
+  }, [cart, addToCart, removeFromCart, updateQuantity, clearCart]);
 
-  const getTotalItems = () => cart.reduce((total, item) => total + item.quantity, 0);
-
-  const getTotalPrice = () => cart.reduce((total, item) => total + item.price * item.quantity, 0);
-
-  return (
-    <CartContext.Provider
-      value={{
-        cart,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-        clearCart,
-        getTotalItems,
-        getTotalPrice,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
-  );
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {

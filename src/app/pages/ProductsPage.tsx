@@ -1,122 +1,39 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, ShoppingCart, Star, ShoppingBag, X, Loader2 } from 'lucide-react';
-import emailjs from '@emailjs/browser';
-import { EMAILJS_CONFIG } from '../../config/emailjs';
-import { productsAPI, type Product } from '../../config/api';
+import { Search, Filter, ShoppingCart, Star, ShoppingBag } from 'lucide-react';
+import { getProductId, type Product } from '../../config/api';
+import { useProducts } from '../../hooks/useProducts';
+import { useOrder } from '../../hooks/useOrder';
 import { ProductGallery } from '../components/ProductGallery';
+import { OrderFormModal } from '../components/OrderFormModal';
 import { useCart } from '../context/CartContext';
 
 export const ProductsPage = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showOrderForm, setShowOrderForm] = useState(false);
+  const { products: allProducts, isLoading } = useProducts();
+  const { placeOrder, isSubmitting } = useOrder();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [showNotification, setShowNotification] = useState(false);
   const [showCartNotification, setShowCartNotification] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [formData, setFormData] = useState({
-    customerName: '',
-    customerPhone: '',
-    customerAddress: '',
-  });
 
-  useEffect(() => {
-    const loadProducts = async () => {
-      // 1. Charger d'abord le cache immédiatement
-      const cachedProducts = localStorage.getItem('cached_products');
-      if (cachedProducts) {
-        try {
-          const parsed = JSON.parse(cachedProducts);
-          setAllProducts(parsed);
-          setIsLoading(false);
-        } catch (e) {
-          console.error('Erreur lecture cache:', e);
-        }
-      }
+  const viewProductDetail = (product: Product) => navigate(`/product/${getProductId(product)}`);
 
-      // 2. Charger les données fraîches en arrière-plan
-      try {
-        const data = await productsAPI.getAll();
-        setAllProducts(data);
-        localStorage.setItem('cached_products', JSON.stringify(data));
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Erreur au chargement des produits :', error);
-        if (!cachedProducts) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadProducts();
-  }, []);
-
-  const viewProductDetail = (product: Product) => {
-    const productId = product._id || product.id;
-    navigate(`/product/${productId}`);
-  };
-
-  const filteredProducts = allProducts.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredProducts = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return allProducts;
+    return allProducts.filter(
+      (product) =>
+        product.name.toLowerCase().includes(term) ||
+        product.category.toLowerCase().includes(term) ||
+        product.description?.toLowerCase().includes(term)
+    );
+  }, [allProducts, searchTerm]);
 
   const handleAddToCart = (product: Product) => {
     addToCart(product);
     setShowCartNotification(true);
     setTimeout(() => setShowCartNotification(false), 2000);
-  };
-
-  const handleOrderClick = (product: Product) => {
-    setSelectedProduct(product);
-    setShowOrderForm(true);
-    setFormData({ customerName: '', customerPhone: '', customerAddress: '' });
-  };
-
-  const handleOrderSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedProduct) return;
-    setIsSubmitting(true);
-
-    try {
-      const orderDetails = `${selectedProduct.name} - Prix unitaire: ${selectedProduct.price.toLocaleString()} FCFA`;
-
-      await emailjs.send(
-        EMAILJS_CONFIG.SERVICE_ID,
-        EMAILJS_CONFIG.TEMPLATE_ID,
-        {
-          customer_name: formData.customerName,
-          customer_phone: formData.customerPhone,
-          customer_address: formData.customerAddress,
-          order_details: orderDetails,
-          total_amount: selectedProduct.price.toLocaleString(),
-          order_date: new Date().toLocaleDateString('fr-FR'),
-          to_email: EMAILJS_CONFIG.TO_EMAIL,
-        },
-        EMAILJS_CONFIG.PUBLIC_KEY
-      );
-
-      setShowOrderForm(false);
-      setShowNotification(true);
-      setSelectedProduct(null);
-      setFormData({ customerName: '', customerPhone: '', customerAddress: '' });
-      setTimeout(() => setShowNotification(false), 3000);
-    } catch (error) {
-      console.error("Erreur lors de l'envoi de l'email:", error);
-      alert("Erreur lors de l'envoi de la commande. Veuillez réessayer.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   if (isLoading && allProducts.length === 0) {
@@ -181,7 +98,7 @@ export const ProductsPage = () => {
               const inStock = product.stock === undefined || product.stock > 0;
               return (
                 <article
-                  key={product._id || product.id}
+                  key={getProductId(product)}
                   className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
                 >
                   <button
@@ -256,7 +173,7 @@ export const ProductsPage = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleOrderClick(product)}
+                          onClick={() => setSelectedProduct(product)}
                           disabled={!inStock}
                           className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                         >
@@ -280,58 +197,13 @@ export const ProductsPage = () => {
           </div>
         )}
 
-        {showOrderForm && selectedProduct && (
-          <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
-            <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-4 sm:max-h-[90vh] sm:rounded-2xl sm:p-6 relative z-[10000]">
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <h2 className="min-w-0 text-lg font-bold leading-snug text-gray-800 sm:text-xl">
-                  Commander : {selectedProduct.name}
-                </h2>
-                <button type="button" onClick={() => setShowOrderForm(false)} className="shrink-0 rounded-lg p-2 text-gray-500 hover:bg-gray-100">
-                  <X className="h-5 w-5 sm:h-6 sm:w-6" />
-                </button>
-              </div>
-              <form onSubmit={handleOrderSubmit} className="space-y-3 sm:space-y-4">
-                <input name="customerName" value={formData.customerName} onChange={handleInputChange} required placeholder="Nom complet" className="w-full rounded-lg border px-3 py-2 text-sm" />
-                <input name="customerPhone" type="tel" value={formData.customerPhone} onChange={handleInputChange} required placeholder="Téléphone" className="w-full rounded-lg border px-3 py-2 text-sm" />
-                <input name="customerAddress" value={formData.customerAddress} onChange={handleInputChange} required placeholder="Adresse" className="w-full rounded-lg border px-3 py-2 text-sm" />
-                <div className="flex flex-col gap-2 pt-2 sm:flex-row">
-                  <button 
-                    type="submit" 
-                    disabled={isSubmitting}
-                    className="w-full rounded-xl bg-orange-500 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 sm:flex-1 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Envoi en cours...</span>
-                      </>
-                    ) : (
-                      <span>Confirmer</span>
-                    )}
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => setShowOrderForm(false)} 
-                    disabled={isSubmitting}
-                    className="w-full rounded-xl border py-2.5 text-sm font-semibold sm:flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Annuler
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {showNotification && (
-          <div className="fixed left-3 right-3 top-20 z-[10001] flex items-start gap-3 rounded-xl border bg-white px-4 py-3 shadow-lg sm:left-auto sm:right-4 sm:max-w-sm">
-            <ShoppingBag className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-            <div>
-              <p className="text-sm font-semibold text-slate-900">Commande envoyée</p>
-              <p className="text-xs text-slate-500">Nous vous recontactons très bientôt.</p>
-            </div>
-          </div>
+        {selectedProduct && (
+          <OrderFormModal
+            title={`Commander : ${selectedProduct.name}`}
+            isSubmitting={isSubmitting}
+            onClose={() => setSelectedProduct(null)}
+            onSubmit={(customer) => placeOrder(customer, [{ product: selectedProduct, quantity: 1 }])}
+          />
         )}
 
         {showCartNotification && (
