@@ -11,6 +11,7 @@ export interface ProductInput {
   images?: string[];
   description?: string;
   featured?: boolean;
+  active?: boolean;
 }
 
 type Result = { ok: true; data: ProductInput } | { ok: false; error: string };
@@ -53,6 +54,7 @@ export function parseProductInput(body: unknown, { partial }: { partial: boolean
   }
 
   if (src.featured !== undefined) data.featured = Boolean(src.featured);
+  if (src.active !== undefined) data.active = Boolean(src.active);
 
   // Images : `images` prime sur `image`, et `image` reste toujours la première
   if (src.images !== undefined || src.image !== undefined) {
@@ -73,6 +75,7 @@ export function parseProductInput(body: unknown, { partial }: { partial: boolean
     data.rating ??= 4.5;
     data.description ??= '';
     data.featured ??= false;
+    data.active ??= true;
     if (!data.images) {
       data.image = DEFAULT_IMAGE;
       data.images = [DEFAULT_IMAGE];

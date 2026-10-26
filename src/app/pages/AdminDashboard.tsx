@@ -82,6 +82,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     rating: '4.5',
     description: '',
     featured: false,
+    active: true,
   });
 
   useEffect(() => {
@@ -141,7 +142,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const data = await productsAPI.getAll({ fresh: true });
+      const data = await productsAPI.getAllAdmin();
       setProducts(data);
       setError('');
     } catch (err) {
@@ -184,6 +185,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
         images: selectedImages,
         description: formData.description.trim(),
         featured: formData.featured,
+        active: formData.active,
       };
 
       if (editingProduct && (editingProduct._id || editingProduct.id)) {
@@ -203,6 +205,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
         rating: '4.5',
         description: '',
         featured: false,
+        active: true,
       });
       setSelectedImages([]);
       setActiveTab('products');
@@ -227,6 +230,21 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     }
   };
 
+  // Active / désactive un produit sans passer par le formulaire
+  const handleToggleActive = async (product: Product) => {
+    const id = product._id ?? String(product.id);
+    const active = product.active === false;
+    setProducts((prev) => prev.map((p) => (p === product ? { ...p, active } : p)));
+    try {
+      await productsAPI.update(id, { active });
+      setMessage(active ? `« ${product.name} » est de nouveau visible dans la boutique.` : `« ${product.name} » est masqué de la boutique.`);
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      setProducts((prev) => prev.map((p) => (p._id === product._id && p.id === product.id ? { ...p, active: !active } : p)));
+      setMessage(err instanceof Error ? err.message : 'Mise à jour impossible');
+    }
+  };
+
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
     setFormData({
@@ -237,6 +255,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
       rating: String(product.rating),
       description: product.description ?? '',
       featured: product.featured ?? false,
+      active: product.active !== false,
     });
     setSelectedImages(product.images && product.images.length > 0 ? product.images : [product.image]);
     setActiveTab('add');
@@ -254,6 +273,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
       outOfStock: products.filter((p) => (p.stock || 0) === 0).length,
       lowStock: products.filter((p) => (p.stock || 0) > 0 && (p.stock || 0) <= 5).length,
       featured: products.filter((p) => p.featured).length,
+      inactive: products.filter((p) => p.active === false).length,
       avgRating:
         products.length > 0
           ? (products.reduce((sum, p) => sum + (p.rating || 0), 0) / products.length).toFixed(1)
@@ -633,7 +653,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                   icon={<Package className="h-6 w-6" />}
                   label="Total produits"
                   value={stats.total}
-                  sub={`${stats.featured} en vedette`}
+                  sub={`${stats.featured} en vedette · ${stats.inactive} désactivé(s)`}
                   gradient="from-indigo-500 to-violet-600"
                 />
                 <StatCard
@@ -844,13 +864,16 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                         <th className="px-6 py-4">Catégorie</th>
                         <th className="px-6 py-4">Prix</th>
                         <th className="px-6 py-4">Stock</th>
-                        <th className="px-6 py-4">Note</th>
+                        <th className="px-6 py-4">Boutique</th>
                         <th className="px-6 py-4 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800">
                       {filteredProducts.map((product) => (
-                        <tr key={product._id || product.id} className="transition hover:bg-slate-800/30">
+                        <tr
+                          key={product._id || product.id}
+                          className={`transition hover:bg-slate-800/30 ${product.active === false ? 'opacity-60' : ''}`}
+                        >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <img
@@ -862,6 +885,11 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                                 <p className="font-medium text-white">{product.name}</p>
                                 {product.featured && (
                                   <span className="text-xs text-orange-400">★ Vedette</span>
+                                )}
+                                {product.active === false && (
+                                  <span className="ml-2 rounded-full bg-slate-700 px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-300">
+                                    Désactivé
+                                  </span>
                                 )}
                               </div>
                             </div>
@@ -883,7 +911,9 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                               {product.stock ?? 0}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm text-slate-400">⭐ {product.rating}</td>
+                          <td className="px-6 py-4">
+                            <ActiveToggle active={product.active !== false} onToggle={() => handleToggleActive(product)} />
+                          </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex justify-end gap-2">
                             <button
@@ -1023,6 +1053,20 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                   </div>
                 </label>
 
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3">
+                  <input
+                    name="active"
+                    type="checkbox"
+                    checked={formData.active}
+                    onChange={handleChange}
+                    className="h-5 w-5 rounded accent-orange-500"
+                  />
+                  <div>
+                    <span className="text-sm font-semibold text-white">Visible dans la boutique</span>
+                    <p className="text-xs text-slate-500">Décochez pour masquer un produit indisponible sans le supprimer</p>
+                  </div>
+                </label>
+
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-start">
                   <button
                     type="submit"
@@ -1044,6 +1088,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                           rating: '4.5',
                           description: '',
                           featured: false,
+                          active: true,
                         });
                         setSelectedImages([]);
                       }}
@@ -1148,5 +1193,27 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
       <label className="block text-sm font-semibold text-slate-300">{label}</label>
       {children}
     </div>
+  );
+}
+
+function ActiveToggle({ active, onToggle }: { active: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={active}
+      onClick={onToggle}
+      title={active ? 'Visible dans la boutique — cliquer pour désactiver' : 'Masqué — cliquer pour réactiver'}
+      className="inline-flex items-center gap-2.5"
+    >
+      <span className={`relative h-6 w-11 rounded-full transition ${active ? 'bg-emerald-500' : 'bg-slate-600'}`}>
+        <span
+          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${active ? 'left-[22px]' : 'left-0.5'}`}
+        />
+      </span>
+      <span className={`text-xs font-semibold ${active ? 'text-emerald-400' : 'text-slate-400'}`}>
+        {active ? 'Actif' : 'Désactivé'}
+      </span>
+    </button>
   );
 }

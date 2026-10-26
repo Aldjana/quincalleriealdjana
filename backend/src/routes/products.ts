@@ -15,14 +15,30 @@ function isValidId(id: string): boolean {
   return isUsingFileStore() ? id.length > 0 : mongoose.isValidObjectId(id);
 }
 
+// Les produits désactivés (active: false) sont masqués de la boutique.
+// Les anciens produits sans le champ `active` restent visibles.
+const isActive = (product: { active?: boolean }) => product.active !== false;
+
+async function listProducts() {
+  return isUsingFileStore() ? fileStore.getAll() : Product.find().sort({ createdAt: -1 }).lean();
+}
+
 router.get('/', async (_req, res) => {
   try {
-    const products = isUsingFileStore()
-      ? await fileStore.getAll()
-      : await Product.find().sort({ createdAt: -1 }).lean();
+    const products = (await listProducts()).filter(isActive);
     res.set('Cache-Control', PUBLIC_CACHE).json(products);
   } catch (error) {
     console.error('Erreur GET /api/products', error);
+    res.status(500).json({ error: 'Impossible de récupérer les produits.' });
+  }
+});
+
+// Catalogue complet pour l'admin, produits désactivés compris
+router.get('/admin/all', requireAdmin, async (_req, res) => {
+  try {
+    res.set('Cache-Control', 'no-store').json(await listProducts());
+  } catch (error) {
+    console.error('Erreur GET /api/products/admin/all', error);
     res.status(500).json({ error: 'Impossible de récupérer les produits.' });
   }
 });
@@ -33,7 +49,7 @@ router.get('/:id', async (req, res) => {
     if (!isValidId(id)) return res.status(404).json({ error: 'Produit introuvable.' });
 
     const product = isUsingFileStore() ? await fileStore.getById(id) : await Product.findById(id).lean();
-    if (!product) return res.status(404).json({ error: 'Produit introuvable.' });
+    if (!product || !isActive(product)) return res.status(404).json({ error: 'Produit introuvable.' });
 
     res.set('Cache-Control', PUBLIC_CACHE).json(product);
   } catch (error) {

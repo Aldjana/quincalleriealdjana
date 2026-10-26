@@ -10,6 +10,7 @@ export interface ProductDocument {
   rating: number;
   stock?: number;
   featured?: boolean;
+  active?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,6 +29,8 @@ const productSchema = new mongoose.Schema<ProductDocument>(
     rating: { type: Number, required: true, default: 4.5 },
     stock: { type: Number, required: true, default: 0 },
     featured: { type: Boolean, default: false },
+    // false = masqué de la boutique (produit indisponible) ; absent = actif
+    active: { type: Boolean, default: true },
     images: { type: [String], default: [] },
   },
   {
