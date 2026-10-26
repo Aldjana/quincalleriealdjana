@@ -3,18 +3,11 @@ import { useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { useProducts } from '../../hooks/useProducts';
 import { getCategories } from '../../utils/categories';
-import { formatPrice, normalize } from '../../utils/format';
+import { normalize } from '../../utils/format';
 import { ProductCard, ProductCardSkeleton, isInStock } from '../components/ProductCard';
 import { Breadcrumb } from '../components/ui/Breadcrumb';
 
 const PAGE_SIZE = 12;
-
-const PRICE_RANGES = [
-  { id: '0-5000', label: `Moins de ${formatPrice(5000)}`, min: 0, max: 5000 },
-  { id: '5000-20000', label: `${formatPrice(5000)} - ${formatPrice(20000)}`, min: 5000, max: 20000 },
-  { id: '20000-50000', label: `${formatPrice(20000)} - ${formatPrice(50000)}`, min: 20000, max: 50000 },
-  { id: '50000+', label: `Plus de ${formatPrice(50000)}`, min: 50000, max: Infinity },
-];
 
 const SORTS = [
   { id: 'pertinence', label: 'Pertinence' },
@@ -29,7 +22,6 @@ export const ProductsPage = () => {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const category = params.get('categorie') ?? '';
-  const priceId = params.get('prix') ?? '';
   const sort = params.get('tri') ?? 'pertinence';
   const query = params.get('q') ?? '';
   const inStockOnly = params.get('stock') === '1';
@@ -63,11 +55,9 @@ export const ProductsPage = () => {
 
   const filtered = useMemo(() => {
     const term = normalize(query);
-    const range = PRICE_RANGES.find((r) => r.id === priceId);
     const result = products.filter(
       (p) =>
         (!category || p.category === category) &&
-        (!range || (p.price >= range.min && p.price < range.max)) &&
         (!inStockOnly || isInStock(p)) &&
         (!term || normalize(`${p.name} ${p.category} ${p.description ?? ''}`).includes(term))
     );
@@ -75,12 +65,12 @@ export const ProductsPage = () => {
     if (sort === 'prix-desc') result.sort((a, b) => b.price - a.price);
     if (sort === 'nom') result.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
     return result;
-  }, [products, category, priceId, query, sort, inStockOnly]);
+  }, [products, category, query, sort, inStockOnly]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
   const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-  const activeFilters = [category, priceId, inStockOnly, query].filter(Boolean).length;
+  const activeFilters = [category, inStockOnly, query].filter(Boolean).length;
 
   const goToPage = (n: number) => {
     updateParams({ page: n > 1 ? String(n) : null });
@@ -99,13 +89,6 @@ export const ProductsPage = () => {
             active={category === c.name}
             onClick={() => updateParams({ categorie: c.name })}
           />
-        ))}
-      </FilterGroup>
-
-      <FilterGroup title="Prix">
-        <FilterOption label="Tous les prix" active={!priceId} onClick={() => updateParams({ prix: null })} />
-        {PRICE_RANGES.map((r) => (
-          <FilterOption key={r.id} label={r.label} active={priceId === r.id} onClick={() => updateParams({ prix: r.id })} />
         ))}
       </FilterGroup>
 
