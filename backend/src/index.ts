@@ -5,6 +5,8 @@ import compression from 'compression';
 import productsRouter from './routes/products.js';
 import authRouter from './routes/auth.js';
 import uploadRouter from './routes/upload.js';
+import ordersRouter from './routes/orders.js';
+import messagesRouter from './routes/messages.js';
 import { connectDatabase, getStorageMode } from './db/connection.js';
 
 const app = express();
@@ -32,6 +34,8 @@ app.use((_req, res, next) => {
 app.use('/api/products', productsRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/upload', uploadRouter);
+app.use('/api/orders', ordersRouter);
+app.use('/api/messages', messagesRouter);
 
 app.get('/', (_req, res) => {
   res.json({

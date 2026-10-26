@@ -1,58 +1,68 @@
-import { useNavigate } from 'react-router-dom';
-import { CheckCircle, ShoppingBag, Home } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { CheckCircle2, PhoneCall } from 'lucide-react';
+import type { PlacedOrder } from '../../services/orders';
+import { SHOP, whatsappLink } from '../../config/shop';
+import { formatPrice } from '../../utils/format';
+import { WhatsAppIcon } from '../components/ui/WhatsAppIcon';
 
 export const OrderConfirmationPage = () => {
-  const navigate = useNavigate();
+  const order = (useLocation().state as { order?: PlacedOrder } | null)?.order;
 
   return (
-    <div className="w-full min-w-0 flex-1 pb-12 sm:pb-16">
-      <div className="mx-auto max-w-7xl px-3 py-6 sm:px-4 sm:py-8 lg:px-6">
-        <div className="mx-auto max-w-2xl">
-          <div className="bg-white rounded-2xl p-6 sm:p-10 shadow-lg border border-green-100">
-            <div className="flex flex-col items-center text-center">
-              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
-                <CheckCircle className="h-10 w-10 text-green-600" />
-              </div>
-              
-              <h1 className="mb-3 text-2xl sm:text-3xl font-bold text-gray-900">
-                Commande confirmée ✅
-              </h1>
-              
-              <p className="mb-6 text-base sm:text-lg text-gray-600">
-                Merci pour votre commande ! Nous avons bien reçu votre demande.
-              </p>
-              
-              <div className="mb-8 rounded-lg bg-blue-50 p-4 sm:p-6 w-full">
-                <div className="flex items-start gap-3">
-                  <ShoppingBag className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
-                  <div className="text-left">
-                    <h3 className="font-semibold text-gray-900 mb-1">Prochaines étapes</h3>
-                    <p className="text-sm text-gray-600">
-                      Notre équipe vous contactera très bientôt par téléphone pour confirmer 
-                      les détails de votre commande et organiser la livraison.
-                    </p>
-                  </div>
-                </div>
-              </div>
+    <div className="mx-auto max-w-2xl px-4 py-10 sm:py-14">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-10">
+        <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+          <CheckCircle2 className="h-9 w-9" />
+        </span>
+        <h1 className="mt-5 text-2xl font-bold text-navy-900 sm:text-3xl">Merci pour votre commande !</h1>
+        {order ? (
+          <p className="mt-2 text-slate-600">
+            Commande <span className="font-semibold text-navy-900">{order.orderNumber}</span> bien reçue.
+          </p>
+        ) : (
+          <p className="mt-2 text-slate-600">Votre commande a bien été reçue.</p>
+        )}
 
-              <div className="flex flex-col sm:flex-row gap-3 w-full">
-                <button
-                  onClick={() => navigate('/products')}
-                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-semibold transition"
-                >
-                  <ShoppingBag className="h-5 w-5" />
-                  <span>Continuer mes achats</span>
-                </button>
-                <button
-                  onClick={() => navigate('/')}
-                  className="flex-1 flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold transition"
-                >
-                  <Home className="h-5 w-5" />
-                  <span>Retour à l'accueil</span>
-                </button>
-              </div>
+        {order && (
+          <div className="mt-6 rounded-xl border border-slate-200 text-left">
+            <ul className="divide-y divide-slate-100">
+              {order.items.map((item) => (
+                <li key={item.name} className="flex justify-between gap-4 px-4 py-3 text-sm">
+                  <span className="text-slate-700">
+                    {item.quantity} × {item.name}
+                  </span>
+                  <span className="shrink-0 font-medium tabular-nums">{formatPrice(item.price * item.quantity)}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="flex justify-between border-t border-slate-200 bg-slate-50 px-4 py-3 font-bold text-navy-900">
+              <span>Total</span>
+              <span className="tabular-nums">{formatPrice(order.total)}</span>
             </div>
           </div>
+        )}
+
+        <div className="mt-6 flex items-start gap-3 rounded-xl bg-navy-50 p-4 text-left">
+          <PhoneCall className="mt-0.5 h-5 w-5 shrink-0 text-navy-700" />
+          <p className="text-sm text-slate-700">
+            <span className="font-semibold text-navy-900">Prochaine étape :</span> notre équipe vous appelle très bientôt pour
+            confirmer la commande et organiser la livraison. Le paiement se fait à la livraison.
+          </p>
+        </div>
+
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <Link to="/products" className="flex-1 rounded-lg bg-brand-500 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-600">
+            Continuer mes achats
+          </Link>
+          <a
+            href={whatsappLink(order ? `Bonjour ${SHOP.name}, je vous contacte au sujet de ma commande ${order.orderNumber}.` : undefined)}
+            target="_blank"
+            rel="noreferrer"
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+          >
+            <WhatsAppIcon className="h-4 w-4 text-whatsapp" />
+            Nous contacter
+          </a>
         </div>
       </div>
     </div>

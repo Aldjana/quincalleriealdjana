@@ -1,221 +1,342 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, Filter, ShoppingCart, Star, ShoppingBag } from 'lucide-react';
-import { getProductId, type Product } from '../../config/api';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { useProducts } from '../../hooks/useProducts';
-import { useOrder } from '../../hooks/useOrder';
-import { ProductGallery } from '../components/ProductGallery';
-import { OrderFormModal } from '../components/OrderFormModal';
-import { useCart } from '../context/CartContext';
+import { getCategories } from '../../utils/categories';
+import { formatPrice, normalize } from '../../utils/format';
+import { ProductCard, ProductCardSkeleton, isInStock } from '../components/ProductCard';
+import { Breadcrumb } from '../components/ui/Breadcrumb';
+
+const PAGE_SIZE = 12;
+
+const PRICE_RANGES = [
+  { id: '0-5000', label: `Moins de ${formatPrice(5000)}`, min: 0, max: 5000 },
+  { id: '5000-20000', label: `${formatPrice(5000)} - ${formatPrice(20000)}`, min: 5000, max: 20000 },
+  { id: '20000-50000', label: `${formatPrice(20000)} - ${formatPrice(50000)}`, min: 20000, max: 50000 },
+  { id: '50000+', label: `Plus de ${formatPrice(50000)}`, min: 50000, max: Infinity },
+];
+
+const SORTS = [
+  { id: 'pertinence', label: 'Pertinence' },
+  { id: 'prix-asc', label: 'Prix croissant' },
+  { id: 'prix-desc', label: 'Prix décroissant' },
+  { id: 'nom', label: 'Nom (A-Z)' },
+];
 
 export const ProductsPage = () => {
-  const navigate = useNavigate();
-  const { addToCart } = useCart();
-  const { products: allProducts, isLoading } = useProducts();
-  const { placeOrder, isSubmitting } = useOrder();
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [showCartNotification, setShowCartNotification] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const { products, isLoading, error } = useProducts();
+  const [params, setParams] = useSearchParams();
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const viewProductDetail = (product: Product) => navigate(`/product/${getProductId(product)}`);
+  const category = params.get('categorie') ?? '';
+  const priceId = params.get('prix') ?? '';
+  const sort = params.get('tri') ?? 'pertinence';
+  const query = params.get('q') ?? '';
+  const inStockOnly = params.get('stock') === '1';
+  const page = Math.max(1, Number(params.get('page')) || 1);
 
-  const filteredProducts = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return allProducts;
-    return allProducts.filter(
-      (product) =>
-        product.name.toLowerCase().includes(term) ||
-        product.category.toLowerCase().includes(term) ||
-        product.description?.toLowerCase().includes(term)
-    );
-  }, [allProducts, searchTerm]);
+  const [search, setSearch] = useState(query);
+  useEffect(() => {
+    setSearch(query);
+  }, [query]);
 
-  const handleAddToCart = (product: Product) => {
-    addToCart(product);
-    setShowCartNotification(true);
-    setTimeout(() => setShowCartNotification(false), 2000);
+  const updateParams = (changes: Record<string, string | null>) => {
+    const next = new URLSearchParams(params);
+    for (const [key, value] of Object.entries(changes)) {
+      if (value) next.set(key, value);
+      else next.delete(key);
+    }
+    if (!('page' in changes)) next.delete('page');
+    setParams(next, { replace: true });
   };
 
-  if (isLoading && allProducts.length === 0) {
-    return (
-      <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
-          <p className="text-gray-600">Chargement des produits...</p>
-        </div>
-      </div>
+  // Recherche appliquée après une courte pause de saisie
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (search.trim() !== query) updateParams({ q: search.trim() || null });
+    }, 250);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
+
+  const categories = useMemo(() => getCategories(products), [products]);
+
+  const filtered = useMemo(() => {
+    const term = normalize(query);
+    const range = PRICE_RANGES.find((r) => r.id === priceId);
+    const result = products.filter(
+      (p) =>
+        (!category || p.category === category) &&
+        (!range || (p.price >= range.min && p.price < range.max)) &&
+        (!inStockOnly || isInStock(p)) &&
+        (!term || normalize(`${p.name} ${p.category} ${p.description ?? ''}`).includes(term))
     );
-  }
+    if (sort === 'prix-asc') result.sort((a, b) => a.price - b.price);
+    if (sort === 'prix-desc') result.sort((a, b) => b.price - a.price);
+    if (sort === 'nom') result.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+    return result;
+  }, [products, category, priceId, query, sort, inStockOnly]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const activeFilters = [category, priceId, inStockOnly, query].filter(Boolean).length;
+
+  const goToPage = (n: number) => {
+    updateParams({ page: n > 1 ? String(n) : null });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const filtersPanel = (
+    <div className="space-y-6">
+      <FilterGroup title="Catégories">
+        <FilterOption label="Toutes les catégories" count={products.length} active={!category} onClick={() => updateParams({ categorie: null })} />
+        {categories.map((c) => (
+          <FilterOption
+            key={c.name}
+            label={c.name}
+            count={c.count}
+            active={category === c.name}
+            onClick={() => updateParams({ categorie: c.name })}
+          />
+        ))}
+      </FilterGroup>
+
+      <FilterGroup title="Prix">
+        <FilterOption label="Tous les prix" active={!priceId} onClick={() => updateParams({ prix: null })} />
+        {PRICE_RANGES.map((r) => (
+          <FilterOption key={r.id} label={r.label} active={priceId === r.id} onClick={() => updateParams({ prix: r.id })} />
+        ))}
+      </FilterGroup>
+
+      <label className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          checked={inStockOnly}
+          onChange={(e) => updateParams({ stock: e.target.checked ? '1' : null })}
+          className="h-4 w-4 rounded accent-brand-500"
+        />
+        Disponible uniquement
+      </label>
+
+      {activeFilters > 0 && (
+        <button
+          type="button"
+          onClick={() => setParams({}, { replace: true })}
+          className="text-sm font-semibold text-brand-600 hover:text-brand-700"
+        >
+          Effacer les filtres
+        </button>
+      )}
+    </div>
+  );
 
   return (
-    <div className="w-full min-w-0 flex-1 pb-12 sm:pb-16">
-      <div className="mx-auto max-w-7xl px-3 py-6 sm:px-4 sm:py-8 lg:px-6">
-        <header className="mb-6 rounded-2xl border border-slate-200/90 bg-white/90 px-3 py-4 shadow-sm backdrop-blur sm:mb-8 sm:px-5 sm:py-5 md:px-6">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-orange-600">Catalogue</p>
-              <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Tous les produits</h1>
-              <p className="mt-1 max-w-xl text-sm text-slate-600">
-                Outils et équipements sélectionnés pour les professionnels et les particuliers exigeants.
-              </p>
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8 lg:px-6">
+      <Breadcrumb items={[{ label: 'Accueil', to: '/' }, { label: category || 'Produits' }]} />
+
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-navy-900 sm:text-3xl">{category || 'Nos produits'}</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            {isLoading && products.length === 0
+              ? 'Chargement…'
+              : `${filtered.length} produit${filtered.length > 1 ? 's' : ''}`}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <div className="relative flex-1 sm:w-72">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher un produit…"
+              aria-label="Rechercher un produit"
+              className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-10 pr-3 text-base outline-none transition focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15 sm:text-sm"
+            />
+          </div>
+          <select
+            value={sort}
+            onChange={(e) => updateParams({ tri: e.target.value === 'pertinence' ? null : e.target.value })}
+            aria-label="Trier les produits"
+            className="hidden h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-navy-500 sm:block"
+          >
+            {SORTS.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(true)}
+            className="relative flex h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 lg:hidden"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filtres
+            {activeFilters > 0 && (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-500 text-[11px] font-bold text-white">
+                {activeFilters}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Catégories rapides (mobile) */}
+      {categories.length > 0 && (
+        <div className="no-scrollbar -mx-4 mb-5 flex gap-2 overflow-x-auto px-4 lg:hidden">
+          <Chip label="Tout" active={!category} onClick={() => updateParams({ categorie: null })} />
+          {categories.map((c) => (
+            <Chip key={c.name} label={c.name} active={category === c.name} onClick={() => updateParams({ categorie: c.name })} />
+          ))}
+        </div>
+      )}
+
+      <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
+        <aside className="hidden lg:block">
+          <div className="sticky top-32 rounded-xl border border-slate-200 bg-white p-5">{filtersPanel}</div>
+        </aside>
+
+        <div className="min-w-0">
+          {error && products.length === 0 ? (
+            <EmptyState title="Impossible de charger les produits" text="Vérifiez votre connexion puis actualisez la page." />
+          ) : isLoading && products.length === 0 ? (
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }, (_, i) => (
+                <ProductCardSkeleton key={i} />
+              ))}
             </div>
-            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end lg:w-auto">
-              <div className="relative w-full sm:w-64">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="search"
-                  placeholder="Rechercher un produit…"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-2.5 pl-10 pr-3 text-base text-slate-900 outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-500/20 sm:text-sm"
-                />
+          ) : visible.length === 0 ? (
+            <EmptyState
+              title="Aucun produit trouvé"
+              text="Essayez un autre mot-clé ou retirez des filtres."
+              action={
+                <button
+                  type="button"
+                  onClick={() => setParams({}, { replace: true })}
+                  className="mt-4 rounded-lg bg-navy-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-navy-900"
+                >
+                  Voir tous les produits
+                </button>
+              }
+            />
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
+                {visible.map((product) => (
+                  <ProductCard key={product._id ?? product.id} product={product} />
+                ))}
               </div>
+              {pageCount > 1 && (
+                <nav className="mt-8 flex items-center justify-center gap-1.5" aria-label="Pagination">
+                  {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => goToPage(n)}
+                      aria-current={n === currentPage ? 'page' : undefined}
+                      className={`h-10 min-w-10 rounded-lg px-3 text-sm font-semibold transition ${
+                        n === currentPage ? 'bg-navy-800 text-white' : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </nav>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Panneau de filtres mobile */}
+      {filtersOpen && (
+        <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal="true" aria-label="Filtres">
+          <button type="button" aria-label="Fermer" className="absolute inset-0 bg-black/40" onClick={() => setFiltersOpen(false)} />
+          <div className="absolute inset-y-0 right-0 flex w-[85%] max-w-sm flex-col bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <p className="text-lg font-semibold text-navy-900">Filtres</p>
+              <button type="button" onClick={() => setFiltersOpen(false)} aria-label="Fermer" className="rounded-lg p-2 hover:bg-slate-100">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5">
+              <FilterGroup title="Trier par">
+                {SORTS.map((s) => (
+                  <FilterOption
+                    key={s.id}
+                    label={s.label}
+                    active={sort === s.id}
+                    onClick={() => updateParams({ tri: s.id === 'pertinence' ? null : s.id })}
+                  />
+                ))}
+              </FilterGroup>
+              <div className="mt-6">{filtersPanel}</div>
+            </div>
+            <div className="border-t border-slate-200 p-4">
               <button
                 type="button"
-                className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:w-auto"
+                onClick={() => setFiltersOpen(false)}
+                className="w-full rounded-lg bg-navy-800 py-3 text-sm font-semibold text-white"
               >
-                <Filter className="h-4 w-4 text-slate-500" />
-                Filtres
+                Voir {filtered.length} produit{filtered.length > 1 ? 's' : ''}
               </button>
             </div>
           </div>
-        </header>
-
-        {filteredProducts.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
-            <p className="text-slate-600">Aucun produit ne correspond à votre recherche.</p>
-            <button
-              type="button"
-              onClick={() => setSearchTerm('')}
-              className="mt-4 text-sm font-semibold text-orange-600 hover:text-orange-700"
-            >
-              Réinitialiser la recherche
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredProducts.map((product) => {
-              const inStock = product.stock === undefined || product.stock > 0;
-              return (
-                <article
-                  key={getProductId(product)}
-                  className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
-                >
-                  <button
-                    type="button"
-                    onClick={() => viewProductDetail(product)}
-                    className="relative h-64 w-full overflow-hidden rounded-t-2xl bg-slate-100 text-left sm:h-72 lg:h-80"
-                  >
-                    <div className="pointer-events-none absolute left-3 right-3 top-3 z-10 flex items-start justify-between gap-2">
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide shadow-sm ${
-                          inStock
-                            ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/80'
-                            : 'bg-rose-50 text-rose-800 ring-1 ring-rose-200/80'
-                        }`}
-                      >
-                        {inStock ? 'En stock' : 'Rupture'}
-                      </span>
-                      {product.featured ? (
-                        <span className="rounded-full bg-orange-500 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white shadow-sm">
-                          Top vente
-                        </span>
-                      ) : null}
-                    </div>
-                    <ProductGallery product={product} variant="compact" />
-                  </button>
-
-                  <div className="flex flex-1 flex-col p-4 sm:p-5">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-orange-600/90">{product.category}</p>
-                    <h2 className="mt-1.5 min-h-[2.75rem] line-clamp-2 text-base font-semibold leading-snug text-slate-900">
-                      <button
-                        type="button"
-                        onClick={() => viewProductDetail(product)}
-                        className="text-left transition-colors hover:text-orange-600"
-                      >
-                        {product.name}
-                      </button>
-                    </h2>
-
-                    <div className="mt-2 flex items-center gap-2">
-                      <div className="flex items-center gap-0.5">
-                        {[0, 1, 2, 3, 4].map((i) => (
-                          <Star
-                            key={i}
-                            className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${
-                              i < Math.floor(product.rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-xs font-medium tabular-nums text-slate-500">{product.rating.toFixed(1)}</span>
-                    </div>
-
-                    {product.description && (
-                      <p className="mt-2 line-clamp-2 flex-1 text-xs leading-relaxed text-slate-500">{product.description}</p>
-                    )}
-
-                    <div className="mt-4 border-t border-slate-100 pt-4">
-                      <p className="text-lg font-bold tabular-nums text-slate-900 sm:text-xl">
-                        {product.price.toLocaleString('fr-FR')}
-                        <span className="ml-1 text-sm font-semibold text-slate-600">FCFA</span>
-                      </p>
-
-                      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        <button
-                          type="button"
-                          onClick={() => handleAddToCart(product)}
-                          disabled={!inStock}
-                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-300"
-                        >
-                          <ShoppingCart className="h-4 w-4 shrink-0" strokeWidth={2} />
-                          Panier
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedProduct(product)}
-                          disabled={!inStock}
-                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          <ShoppingBag className="h-4 w-4 shrink-0" strokeWidth={2} />
-                          Commander
-                        </button>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => viewProductDetail(product)}
-                        className="mt-2 w-full text-center text-xs font-semibold text-orange-600 transition hover:text-orange-700"
-                      >
-                        Voir la fiche détaillée
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-
-        {selectedProduct && (
-          <OrderFormModal
-            title={`Commander : ${selectedProduct.name}`}
-            isSubmitting={isSubmitting}
-            onClose={() => setSelectedProduct(null)}
-            onSubmit={(customer) => placeOrder(customer, [{ product: selectedProduct, quantity: 1 }])}
-          />
-        )}
-
-        {showCartNotification && (
-          <div className="fixed left-3 right-3 top-20 z-[10001] flex items-start gap-3 rounded-xl border bg-white px-4 py-3 shadow-lg sm:left-auto sm:right-4 sm:max-w-sm">
-            <ShoppingCart className="mt-0.5 h-5 w-5 shrink-0 text-orange-600" />
-            <div>
-              <p className="text-sm font-semibold text-slate-900">Ajouté au panier</p>
-              <p className="text-xs text-slate-500">Ouvrez le panier pour finaliser.</p>
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
+
+function FilterGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="mb-2 text-sm font-semibold text-navy-900">{title}</p>
+      <ul className="space-y-0.5">{children}</ul>
+    </div>
+  );
+}
+
+function FilterOption({ label, count, active, onClick }: { label: string; count?: number; active: boolean; onClick: () => void }) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onClick}
+        className={`flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm transition ${
+          active ? 'bg-brand-50 font-semibold text-brand-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+        }`}
+      >
+        <span className="truncate">{label}</span>
+        {count !== undefined && <span className="shrink-0 text-xs text-slate-400">{count}</span>}
+      </button>
+    </li>
+  );
+}
+
+function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition ${
+        active ? 'border-navy-800 bg-navy-800 text-white' : 'border-slate-300 bg-white text-slate-700'
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function EmptyState({ title, text, action }: { title: string; text: string; action?: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-16 text-center">
+      <p className="font-semibold text-slate-900">{title}</p>
+      <p className="mt-1 text-sm text-slate-500">{text}</p>
+      {action}
+    </div>
+  );
+}

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { getProductId, type Product } from '../../config/api';
 import { metaPixelEvents } from '../../config/metaPixel';
+import { useProducts } from '../../hooks/useProducts';
 
 export interface CartItem extends Product {
   quantity: number;
@@ -8,7 +9,7 @@ export interface CartItem extends Product {
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product, quantity?: number) => void;
   removeFromCart: (productId: string | number) => void;
   updateQuantity: (productId: string | number, quantity: number) => void;
   clearCart: () => void;
@@ -35,6 +36,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Le panier survit au rechargement de la page
   const [cart, setCart] = useState<CartItem[]>(loadCart);
 
+  // Aligne le panier sur le catalogue à jour : prix modifiés, produits supprimés
+  const { products, isFresh } = useProducts();
+  useEffect(() => {
+    if (!isFresh) return;
+    const catalog = new Map(products.map((p) => [getProductId(p), p]));
+    setCart((prev) => {
+      let changed = false;
+      const next = prev.flatMap((item) => {
+        const current = catalog.get(getProductId(item));
+        if (!current) {
+          changed = true;
+          return [];
+        }
+        if (current.price !== item.price || current.name !== item.name || current.image !== item.image) {
+          changed = true;
+          return [{ ...item, ...current, quantity: item.quantity }];
+        }
+        return [item];
+      });
+      return changed ? next : prev;
+    });
+  }, [products, isFresh]);
+
   useEffect(() => {
     try {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
@@ -43,19 +67,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [cart]);
 
-  const addToCart = useCallback((product: Product) => {
+  const addToCart = useCallback((product: Product, quantity = 1) => {
     const productId = getProductId(product);
     // Tracking hors du setState : React peut rejouer la fonction de mise à jour
-    metaPixelEvents.addToCart(product.name, productId, product.price, 1);
+    metaPixelEvents.addToCart(product.name, productId, product.price, quantity);
 
     setCart((prev) => {
       const existing = prev.find((item) => getProductId(item) === productId);
       if (existing) {
         return prev.map((item) =>
-          getProductId(item) === productId ? { ...item, quantity: item.quantity + 1 } : item
+          getProductId(item) === productId ? { ...item, quantity: item.quantity + quantity } : item
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...product, quantity }];
     });
   }, []);
 
