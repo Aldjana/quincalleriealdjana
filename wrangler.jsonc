@@ -1,0 +1,11 @@
+// Hébergement du site sur Cloudflare Workers (fichiers statiques produits par Vite).
+// Le nom doit correspondre au projet créé dans le tableau de bord Cloudflare.
+{
+  "name": "quincalleriealdjana",
+  "compatibility_date": "2025-10-01",
+  "assets": {
+    "directory": "./dist",
+    // Navigation React : toute adresse inconnue renvoie index.html (/products, /admin...)
+    "not_found_handling": "single-page-application"
+  }
+}
