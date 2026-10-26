@@ -21,6 +21,13 @@ Serveur Node.js + MongoDB pour la gestion des produits.
 - `PUT /api/products/:id` : mise à jour d'un produit (admin)
 - `DELETE /api/products/:id` : suppression d'un produit (admin)
 
+Commandes et messages de contact :
+
+- `POST /api/orders` : nouvelle commande (public, prix recalculés en base)
+- `GET /api/orders`, `PATCH /api/orders/:id`, `DELETE /api/orders/:id` : gestion (admin)
+- `POST /api/messages` : message du formulaire de contact (public)
+- `GET /api/messages`, `PATCH /api/messages/:id`, `DELETE /api/messages/:id` : gestion (admin)
+
 Les routes marquées « admin » (ainsi que `/api/upload/*`) exigent l'en-tête
 `Authorization: Bearer <jeton>`, obtenu via `POST /api/auth/login`.
 

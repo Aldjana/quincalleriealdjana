@@ -17,6 +17,9 @@ import {
   Wrench,
   ExternalLink,
   RefreshCw,
+  ShoppingBag,
+  MessageSquare,
+  Clock,
 } from 'lucide-react';
 import {
   PieChart,
@@ -33,14 +36,27 @@ import {
   Cell,
 } from 'recharts';
 import { Link } from 'react-router-dom';
-import { productsAPI, type Product } from '../../config/api';
+import {
+  ApiError,
+  messagesAPI,
+  ordersAPI,
+  productsAPI,
+  type ContactMessage,
+  type Order,
+  type OrderStatus,
+  type Product,
+} from '../../config/api';
+import { formatDate, formatPrice } from '../../utils/format';
 import { LocalImagePicker } from '../components/LocalImagePicker';
+import { AdminOrders } from '../admin/AdminOrders';
+import { AdminMessages } from '../admin/AdminMessages';
+import { ORDER_STATUS } from '../admin/orderStatus';
 
 interface AdminDashboardProps {
   onLogout: () => void;
 }
 
-type Tab = 'overview' | 'products' | 'add';
+type Tab = 'overview' | 'orders' | 'messages' | 'products' | 'add';
 
 const COLORS = ['#f97316', '#6366f1', '#10b981', '#ec4899', '#0ea5e9', '#eab308'];
 
@@ -54,6 +70,10 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
+  // 503 = MongoDB injoignable : commandes et messages indisponibles
+  const [ordersUnavailable, setOrdersUnavailable] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -65,8 +85,58 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   });
 
   useEffect(() => {
-    loadProducts();
+    loadAll();
+    // Nouvelles commandes récupérées automatiquement toutes les minutes
+    const timer = setInterval(() => loadOrdersAndMessages(), 60_000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const loadOrdersAndMessages = async () => {
+    const [ordersResult, messagesResult] = await Promise.allSettled([ordersAPI.list(), messagesAPI.list()]);
+    if (ordersResult.status === 'fulfilled') setOrders(ordersResult.value);
+    if (messagesResult.status === 'fulfilled') setContactMessages(messagesResult.value);
+    const failure = [ordersResult, messagesResult].find((r) => r.status === 'rejected') as PromiseRejectedResult | undefined;
+    setOrdersUnavailable(failure?.reason instanceof ApiError && failure.reason.status === 503);
+  };
+
+  const loadAll = () => Promise.all([loadProducts(), loadOrdersAndMessages()]);
+
+  const handleOrderUpdate = async (id: string, data: { status?: OrderStatus; adminNote?: string }) => {
+    try {
+      const updated = await ordersAPI.update(id, data);
+      setOrders((prev) => prev.map((o) => (o._id === id ? updated : o)));
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Mise à jour impossible');
+    }
+  };
+
+  const handleOrderDelete = async (id: string) => {
+    try {
+      await ordersAPI.delete(id);
+      setOrders((prev) => prev.filter((o) => o._id !== id));
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Suppression impossible');
+    }
+  };
+
+  const handleMessageRead = async (id: string, read: boolean) => {
+    try {
+      const updated = await messagesAPI.markRead(id, read);
+      setContactMessages((prev) => prev.map((m) => (m._id === id ? updated : m)));
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Mise à jour impossible');
+    }
+  };
+
+  const handleMessageDelete = async (id: string) => {
+    try {
+      await messagesAPI.delete(id);
+      setContactMessages((prev) => prev.filter((m) => m._id !== id));
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Suppression impossible');
+    }
+  };
 
   const loadProducts = async () => {
     try {
@@ -192,6 +262,48 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     [products]
   );
 
+  const orderStats = useMemo(() => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const active = orders.filter((o) => o.status !== 'annulee');
+    const thisMonth = active.filter((o) => new Date(o.createdAt) >= startOfMonth);
+    return {
+      pending: orders.filter((o) => o.status === 'nouvelle').length,
+      toDeliver: orders.filter((o) => o.status === 'confirmee' || o.status === 'en_livraison').length,
+      monthCount: thisMonth.length,
+      monthRevenue: thisMonth.reduce((sum, o) => sum + o.total, 0),
+      deliveredRevenue: orders.filter((o) => o.status === 'livree').reduce((sum, o) => sum + o.total, 0),
+      unreadMessages: contactMessages.filter((m) => !m.read).length,
+    };
+  }, [orders, contactMessages]);
+
+  // Commandes (hors annulées) des 14 derniers jours
+  const salesData = useMemo(() => {
+    const days = Array.from({ length: 14 }, (_, i) => {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - (13 - i));
+      return d;
+    });
+    return days.map((day) => {
+      const next = new Date(day);
+      next.setDate(day.getDate() + 1);
+      const dayOrders = orders.filter((o) => {
+        const created = new Date(o.createdAt);
+        return o.status !== 'annulee' && created >= day && created < next;
+      });
+      return {
+        name: day.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+        commandes: dayOrders.length,
+        montant: dayOrders.reduce((sum, o) => sum + o.total, 0),
+      };
+    });
+  }, [orders]);
+
+  const recentOrders = useMemo(() => orders.slice(0, 5), [orders]);
+
+  const knownCategories = useMemo(() => [...new Set(products.map((p) => p.category))].sort(), [products]);
+
   const categoriesData = useMemo(
     () =>
       Object.entries(
@@ -246,6 +358,8 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
 
   const navItems: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Vue d\'ensemble', icon: <LayoutDashboard className="h-5 w-5" /> },
+    { id: 'orders', label: 'Commandes', icon: <ShoppingBag className="h-5 w-5" /> },
+    { id: 'messages', label: 'Messages', icon: <MessageSquare className="h-5 w-5" /> },
     { id: 'products', label: 'Produits', icon: <Package className="h-5 w-5" /> },
     { id: 'add', label: 'Ajouter', icon: <Plus className="h-5 w-5" /> },
   ];
@@ -316,6 +430,16 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                   {products.length}
                 </span>
               )}
+              {item.id === 'orders' && orderStats.pending > 0 && (
+                <span className="ml-auto rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">
+                  {orderStats.pending}
+                </span>
+              )}
+              {item.id === 'messages' && orderStats.unreadMessages > 0 && (
+                <span className="ml-auto rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">
+                  {orderStats.unreadMessages}
+                </span>
+              )}
             </button>
           ))}
         </nav>
@@ -355,6 +479,8 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
               <div>
                 <h1 className="text-lg font-bold text-white sm:text-xl">
                   {activeTab === 'overview' && 'Tableau de bord'}
+                  {activeTab === 'orders' && 'Commandes'}
+                  {activeTab === 'messages' && 'Messages clients'}
                   {activeTab === 'products' && 'Gestion des produits'}
                   {activeTab === 'add' && 'Nouveau produit'}
                 </h1>
@@ -365,7 +491,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={loadProducts}
+                onClick={loadAll}
                 disabled={loading}
                 className="hidden items-center gap-2 rounded-xl border border-slate-800 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 disabled:opacity-50 sm:flex"
               >
@@ -402,6 +528,106 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
           {/* Overview */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <StatCard
+                  icon={<ShoppingBag className="h-6 w-6" />}
+                  label="Commandes à traiter"
+                  value={orderStats.pending}
+                  sub={`${orderStats.toDeliver} confirmée(s) / en livraison`}
+                  gradient="from-orange-500 to-amber-600"
+                  onClick={() => setActiveTab('orders')}
+                />
+                <StatCard
+                  icon={<TrendingUp className="h-6 w-6" />}
+                  label="Ventes du mois"
+                  value={formatPrice(orderStats.monthRevenue)}
+                  sub={`${orderStats.monthCount} commande(s) hors annulées`}
+                  gradient="from-emerald-500 to-teal-600"
+                />
+                <StatCard
+                  icon={<DollarSign className="h-6 w-6" />}
+                  label="Chiffre d'affaires livré"
+                  value={formatPrice(orderStats.deliveredRevenue)}
+                  sub="Commandes livrées"
+                  gradient="from-sky-500 to-blue-600"
+                />
+                <StatCard
+                  icon={<MessageSquare className="h-6 w-6" />}
+                  label="Messages non lus"
+                  value={orderStats.unreadMessages}
+                  sub={`${contactMessages.length} message(s) au total`}
+                  gradient="from-pink-500 to-rose-600"
+                  onClick={() => setActiveTab('messages')}
+                />
+              </div>
+
+              {ordersUnavailable && (
+                <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-sm text-amber-200">
+                  Base de données injoignable : commandes et messages indisponibles pour le moment.
+                </div>
+              )}
+
+              <div className="grid gap-6 xl:grid-cols-3">
+                <ChartCard title="Commandes des 14 derniers jours" className="xl:col-span-2">
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={salesData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                      <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                      <YAxis allowDecimals={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                      <Tooltip
+                        contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px' }}
+                        labelStyle={{ color: '#f1f5f9' }}
+                        formatter={(value, name, entry) =>
+                          name === 'commandes'
+                            ? [`${value} — ${formatPrice((entry.payload as { montant: number }).montant)}`, 'Commandes']
+                            : [value, name]
+                        }
+                      />
+                      <Bar dataKey="commandes" fill="#f97316" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+                  <div className="mb-4 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-orange-400" />
+                      <h3 className="font-semibold text-white">Dernières commandes</h3>
+                    </div>
+                    <button type="button" onClick={() => setActiveTab('orders')} className="text-xs font-semibold text-orange-400 hover:text-orange-300">
+                      Tout voir
+                    </button>
+                  </div>
+                  {recentOrders.length === 0 ? (
+                    <p className="text-sm text-slate-500">Aucune commande pour le moment</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {recentOrders.map((o) => (
+                        <li key={o._id}>
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('orders')}
+                            className="flex w-full items-center justify-between gap-3 rounded-xl bg-slate-800/50 px-4 py-3 text-left hover:bg-slate-800"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-white">{o.customer.name}</p>
+                              <p className="text-xs text-slate-500">{formatDate(o.createdAt)}</p>
+                            </div>
+                            <div className="shrink-0 text-right">
+                              <p className="text-sm font-semibold text-emerald-400">{formatPrice(o.total)}</p>
+                              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${ORDER_STATUS[o.status].badge}`}>
+                                {ORDER_STATUS[o.status].label}
+                              </span>
+                            </div>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+
+              <h2 className="pt-2 text-sm font-semibold uppercase tracking-wider text-slate-500">Catalogue</h2>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard
                   icon={<Package className="h-6 w-6" />}
@@ -563,6 +789,24 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
             </div>
           )}
 
+          {activeTab === 'orders' && (
+            <AdminOrders
+              orders={orders}
+              unavailable={ordersUnavailable}
+              onUpdate={handleOrderUpdate}
+              onDelete={handleOrderDelete}
+            />
+          )}
+
+          {activeTab === 'messages' && (
+            <AdminMessages
+              messages={contactMessages}
+              unavailable={ordersUnavailable}
+              onMarkRead={handleMessageRead}
+              onDelete={handleMessageDelete}
+            />
+          )}
+
           {/* Products */}
           {activeTab === 'products' && (
             <div className="rounded-2xl border border-slate-800 bg-slate-900/50">
@@ -624,7 +868,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-400">{product.category}</td>
                           <td className="px-6 py-4 text-sm font-semibold text-emerald-400">
-                            {product.price.toLocaleString()} FCFA
+                            {formatPrice(product.price)}
                           </td>
                           <td className="px-6 py-4">
                             <span
@@ -705,7 +949,13 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                       required
                       className={inputClass}
                       placeholder="Ex: Outils électriques"
+                      list="admin-categories"
                     />
+                    <datalist id="admin-categories">
+                      {knownCategories.map((c) => (
+                        <option key={c} value={c} />
+                      ))}
+                    </datalist>
                   </FormField>
                   <FormField label="Prix (FCFA) *">
                     <input
@@ -821,15 +1071,23 @@ function StatCard({
   value,
   sub,
   gradient,
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string | number;
   sub: string;
   gradient: string;
+  onClick?: () => void;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 p-6 transition hover:border-slate-700">
+    <div
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
+      className={`group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 p-6 transition hover:border-slate-700 ${onClick ? 'cursor-pointer' : ''}`}
+    >
       <div
         className={`absolute -right-4 -top-4 h-24 w-24 rounded-full bg-gradient-to-br ${gradient} opacity-10 blur-2xl transition group-hover:opacity-20`}
       />
@@ -839,7 +1097,7 @@ function StatCard({
         {icon}
       </div>
       <p className="mt-4 text-sm font-medium text-slate-400">{label}</p>
-      <p className="mt-1 text-3xl font-bold text-white">{value}</p>
+      <p className="mt-1 text-2xl font-bold text-white sm:text-3xl">{value}</p>
       <p className="mt-1 text-xs text-slate-500">{sub}</p>
     </div>
   );

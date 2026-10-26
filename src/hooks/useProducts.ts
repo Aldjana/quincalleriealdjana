@@ -58,6 +58,8 @@ export function useProducts() {
   const [products, setProducts] = useState<Product[]>(() => getCached() ?? []);
   const [isLoading, setIsLoading] = useState(() => getCached() === null);
   const [error, setError] = useState<string | null>(null);
+  // true quand les données viennent du serveur (et non du cache local)
+  const [isFresh, setIsFresh] = useState(refreshedThisSession);
 
   useEffect(() => {
     listeners.add(setProducts);
@@ -66,6 +68,7 @@ export function useProducts() {
       refresh()
         .then(() => {
           refreshedThisSession = true;
+          setIsFresh(true);
           setError(null);
         })
         .catch((err: unknown) => {
@@ -80,7 +83,7 @@ export function useProducts() {
     };
   }, []);
 
-  return { products, isLoading, error };
+  return { products, isLoading, error, isFresh };
 }
 
 /** Un produit : servi depuis le cache si possible, sinon chargé depuis l'API. */

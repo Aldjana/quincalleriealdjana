@@ -1,152 +1,154 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, Plus, Minus, X, ArrowRight, CreditCard } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ShoppingCart, Trash2, ArrowLeft, Truck } from 'lucide-react';
 import { getProductId } from '../../config/api';
+import { SHOP, whatsappLink } from '../../config/shop';
 import { metaPixelEvents } from '../../config/metaPixel';
+import { formatPrice } from '../../utils/format';
 import { useCart } from '../context/CartContext';
 import { OrderFormModal } from '../components/OrderFormModal';
+import { Breadcrumb } from '../components/ui/Breadcrumb';
+import { QuantityStepper } from '../components/ui/QuantityStepper';
+import { WhatsAppIcon } from '../components/ui/WhatsAppIcon';
 import { useOrder } from '../../hooks/useOrder';
 
 export const CartPage = () => {
-  const navigate = useNavigate();
   const { cart, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice } = useCart();
   const [showOrderForm, setShowOrderForm] = useState(false);
   const { placeOrder, isSubmitting } = useOrder(clearCart);
+
+  const freeDelivery = SHOP.freeDeliveryFrom > 0 && totalPrice >= SHOP.freeDeliveryFrom;
+  const remainingForFree = SHOP.freeDeliveryFrom - totalPrice;
 
   const handleOrderClick = () => {
     setShowOrderForm(true);
     metaPixelEvents.initiateCheckout(totalPrice, totalItems);
   };
 
+  const whatsappMessage = [
+    `Bonjour ${SHOP.name}, je souhaite commander :`,
+    ...cart.map((item) => `- ${item.quantity} × ${item.name} (${formatPrice(item.price * item.quantity)})`),
+    `Total : ${formatPrice(totalPrice)}`,
+  ].join('\n');
+
+  if (cart.length === 0) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-4 py-16 text-center">
+        <span className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+          <ShoppingCart className="h-9 w-9" />
+        </span>
+        <h1 className="mt-5 text-2xl font-bold text-navy-900">Votre panier est vide</h1>
+        <p className="mt-2 text-slate-600">Parcourez notre catalogue et ajoutez vos produits.</p>
+        <Link to="/products" className="mt-6 rounded-lg bg-brand-500 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-600">
+          Découvrir nos produits
+        </Link>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full min-w-0 flex-1 pb-12 sm:pb-16">
-      <div className="mx-auto max-w-7xl px-3 py-6 sm:px-4 sm:py-8 lg:px-6">
-        <h1 className="text-2xl sm:text-3xl text-[#0a2463] mb-6 sm:mb-8">Mon panier</h1>
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8 lg:px-6">
+      <Breadcrumb items={[{ label: 'Accueil', to: '/' }, { label: 'Panier' }]} />
+      <h1 className="mb-6 text-2xl font-bold tracking-tight text-navy-900 sm:text-3xl">
+        Mon panier <span className="text-lg font-medium text-slate-500">({totalItems} article{totalItems > 1 ? 's' : ''})</span>
+      </h1>
 
-        {cart.length === 0 ? (
-          <div className="text-center py-12 sm:py-16">
-            <ShoppingCart className="w-16 h-16 sm:w-24 sm:h-24 text-gray-300 mx-auto mb-4" />
-            <h2 className="text-xl sm:text-2xl text-gray-600 mb-4">Votre panier est vide</h2>
-            <button onClick={() => navigate('/products')} className="px-6 sm:px-8 py-2 sm:py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm sm:text-base">
-              Continuer mes achats
-            </button>
-          </div>
-        ) : (
-          <div className="grid lg:grid-cols-3 gap-6 sm:gap-8">
-            <div className="lg:col-span-2">
-              <div className="space-y-3 sm:space-y-4">
-                {cart.map((item) => {
-                  const itemId = getProductId(item);
-                  return (
-                    <div key={itemId} className="bg-white border rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-                      <div className="w-16 h-16 sm:w-24 sm:h-24 bg-gray-100 rounded-lg p-2 flex-shrink-0">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          loading="lazy"
-                          decoding="async"
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-
-                      <div className="flex-1 w-full">
-                        <h3 className="text-base sm:text-lg text-gray-800 mb-1">{item.name}</h3>
-                        <p className="text-xs sm:text-sm text-gray-600 mb-2">{item.category}</p>
-                        <p className="text-base sm:text-lg font-bold text-orange-500">{item.price.toLocaleString('fr-FR')} FCFA</p>
-                      </div>
-
-                      <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(itemId, item.quantity - 1)}
-                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-200 transition-colors hover:bg-gray-300 sm:h-10 sm:w-10"
-                          >
-                            <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
-                          </button>
-                          <span className="w-6 sm:w-8 text-center font-semibold text-sm sm:text-base">{item.quantity}</span>
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(itemId, item.quantity + 1)}
-                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-200 transition-colors hover:bg-gray-300 sm:h-10 sm:w-10"
-                          >
-                            <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="text-right w-full sm:w-auto flex justify-between sm:flex-col items-center sm:items-end gap-2 sm:gap-0">
-                        <p className="text-base sm:text-lg font-bold text-gray-800">
-                          {(item.price * item.quantity).toLocaleString('fr-FR')} FCFA
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => removeFromCart(itemId)}
-                          aria-label="Retirer du panier"
-                          className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-700"
-                        >
-                          <X className="w-4 h-4 sm:w-5 sm:h-5" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="lg:col-span-1">
-              <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
-                <h3 className="text-lg sm:text-xl font-bold text-[#0a2463] mb-3 sm:mb-4">Récapitulatif</h3>
-                
-                <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
-                  <div key="subtotal" className="flex justify-between">
-                    <span className="text-gray-600 text-sm sm:text-base">Sous-total</span>
-                    <span className="font-semibold text-sm sm:text-base">{totalPrice.toLocaleString('fr-FR')} FCFA</span>
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:gap-8">
+        <ul className="min-w-0 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
+          {cart.map((item) => {
+            const itemId = getProductId(item);
+            return (
+              <li key={itemId} className="relative flex gap-3 p-4 sm:gap-4">
+                <Link to={`/product/${itemId}`} className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 sm:h-24 sm:w-24">
+                  <img src={item.image} alt={item.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                </Link>
+                <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 pr-9 sm:pr-0">
+                    <Link to={`/product/${itemId}`} className="line-clamp-2 font-semibold text-slate-900 hover:text-brand-600">
+                      {item.name}
+                    </Link>
+                    <p className="text-xs text-slate-500">{item.category}</p>
+                    <p className="mt-1 text-sm font-medium text-slate-700">{formatPrice(item.price)}</p>
                   </div>
-                  <div key="delivery" className="flex justify-between">
-                    <span className="text-gray-600 text-sm sm:text-base">Livraison</span>
-                    <span className="font-semibold text-sm sm:text-base">Gratuite</span>
-                  </div>
-                  <div key="tax" className="flex justify-between">
-                    <span className="text-gray-600 text-sm sm:text-base">TVA</span>
-                    <span className="font-semibold text-sm sm:text-base">0 FCFA</span>
-                  </div>
-                  <div key="total" className="border-t pt-2 sm:pt-3">
-                    <div className="flex justify-between">
-                      <span className="text-base sm:text-lg font-bold text-[#0a2463]">Total</span>
-                      <span className="text-base sm:text-lg font-bold text-orange-500">{totalPrice.toLocaleString('fr-FR')} FCFA</span>
-                    </div>
+                  <div className="flex items-center justify-between gap-3 sm:justify-end sm:gap-4 sm:pr-10">
+                    <QuantityStepper size="sm" value={item.quantity} onChange={(q) => updateQuantity(itemId, q)} />
+                    <p className="whitespace-nowrap text-right font-bold tabular-nums text-navy-900 sm:w-28">
+                      {formatPrice(item.price * item.quantity)}
+                    </p>
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => removeFromCart(itemId)}
+                  aria-label={`Retirer ${item.name} du panier`}
+                  className="absolute right-3 top-3 rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 sm:top-1/2 sm:-translate-y-1/2"
+                >
+                  <Trash2 className="h-5 w-5" />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
 
-                <div className="space-y-2 sm:space-y-3">
-                  <button onClick={handleOrderClick} className="w-full px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 flex items-center justify-center gap-2 text-sm sm:text-base">
-                    <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
-                    <span>Commander</span>
-                  </button>
-                  <button onClick={() => navigate('/products')} className="w-full px-4 sm:px-6 py-2 sm:py-3 border border-orange-500 text-orange-500 rounded-lg hover:bg-orange-50 flex items-center justify-center gap-2 text-sm sm:text-base">
-                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 rotate-180" />
-                    <span>Continuer mes achats</span>
-                  </button>
-                </div>
-              </div>
+        <aside className="h-fit min-w-0 space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5 lg:sticky lg:top-32">
+          <h2 className="text-lg font-bold text-navy-900">Récapitulatif</h2>
+          <dl className="space-y-2.5 text-sm">
+            <div className="flex justify-between">
+              <dt className="text-slate-600">Sous-total</dt>
+              <dd className="font-semibold tabular-nums">{formatPrice(totalPrice)}</dd>
             </div>
-          </div>
-        )}
+            <div className="flex justify-between">
+              <dt className="text-slate-600">Livraison</dt>
+              <dd className={`font-semibold ${freeDelivery ? 'text-emerald-700' : 'text-slate-700'}`}>
+                {freeDelivery ? 'Offerte' : 'À confirmer'}
+              </dd>
+            </div>
+            <div className="flex justify-between border-t border-slate-200 pt-3 text-base">
+              <dt className="font-bold text-navy-900">Total</dt>
+              <dd className="font-bold tabular-nums text-navy-900">{formatPrice(totalPrice)}</dd>
+            </div>
+          </dl>
+
+          {SHOP.freeDeliveryFrom > 0 && !freeDelivery && (
+            <p className="flex gap-2 rounded-lg bg-white p-3 text-xs text-slate-600 ring-1 ring-slate-200">
+              <Truck className="h-4 w-4 shrink-0 text-brand-500" />
+              Plus que {formatPrice(remainingForFree)} pour la livraison offerte.
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={handleOrderClick}
+            className="w-full rounded-lg bg-brand-500 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600"
+          >
+            Commander
+          </button>
+          <a
+            href={whatsappLink(whatsappMessage)}
+            target="_blank"
+            rel="noreferrer"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white py-3 text-sm font-semibold text-slate-800 transition hover:border-whatsapp hover:text-whatsapp-dark"
+          >
+            <WhatsAppIcon className="h-4 w-4 text-whatsapp" />
+            Commander sur WhatsApp
+          </a>
+          <Link to="/products" className="flex items-center justify-center gap-1.5 text-sm font-medium text-slate-600 hover:text-navy-900">
+            <ArrowLeft className="h-4 w-4" />
+            Continuer mes achats
+          </Link>
+        </aside>
       </div>
 
       {showOrderForm && (
         <OrderFormModal
-          title="Commander votre panier"
+          title={`${totalItems} article${totalItems > 1 ? 's' : ''}`}
           isSubmitting={isSubmitting}
           onClose={() => setShowOrderForm(false)}
           onSubmit={(customer) => placeOrder(customer, cart.map((item) => ({ product: item, quantity: item.quantity })))}
           summary={
-            <div className="rounded-lg bg-gray-50 p-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Total à payer :</span>
-                <span className="text-lg font-bold text-orange-500">{totalPrice.toLocaleString('fr-FR')} FCFA</span>
-              </div>
+            <div className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
+              <span className="text-sm text-slate-600">Total à payer à la livraison</span>
+              <span className="text-lg font-bold text-navy-900">{formatPrice(totalPrice)}</span>
             </div>
           }
         />

@@ -137,3 +137,90 @@ export const uploadAPI = {
     return data.imageUrl;
   },
 };
+
+// --- Commandes -------------------------------------------------------------
+
+export type OrderStatus = 'nouvelle' | 'confirmee' | 'en_livraison' | 'livree' | 'annulee';
+
+export interface OrderItem {
+  product: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image?: string;
+}
+
+export interface Order {
+  _id: string;
+  orderNumber: string;
+  items: OrderItem[];
+  customer: { name: string; phone: string; address: string; note?: string };
+  total: number;
+  status: OrderStatus;
+  adminNote?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NewOrder {
+  customer: { name: string; phone: string; address: string; note?: string };
+  items: { productId: string; quantity: number }[];
+}
+
+export const ordersAPI = {
+  create: (order: NewOrder) =>
+    request<Pick<Order, '_id' | 'orderNumber' | 'items' | 'total' | 'createdAt'>>(
+      '/api/orders',
+      { method: 'POST', body: JSON.stringify(order) },
+      "Impossible d'enregistrer la commande"
+    ),
+
+  list: () => request<Order[]>('/api/orders', { auth: true, cache: 'no-store' }, 'Impossible de charger les commandes'),
+
+  update: (id: string, data: { status?: OrderStatus; adminNote?: string }) =>
+    request<Order>(
+      `/api/orders/${encodeURIComponent(id)}`,
+      { method: 'PATCH', body: JSON.stringify(data), auth: true },
+      'Impossible de mettre à jour la commande'
+    ),
+
+  delete: (id: string) =>
+    request<void>(`/api/orders/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }, 'Suppression impossible'),
+};
+
+// --- Messages de contact ---------------------------------------------------
+
+export interface ContactMessage {
+  _id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  subject?: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export type NewContactMessage = Pick<ContactMessage, 'name' | 'phone' | 'email' | 'subject' | 'message'>;
+
+export const messagesAPI = {
+  send: (message: NewContactMessage) =>
+    request<{ success: boolean }>(
+      '/api/messages',
+      { method: 'POST', body: JSON.stringify(message) },
+      "Impossible d'envoyer le message"
+    ),
+
+  list: () =>
+    request<ContactMessage[]>('/api/messages', { auth: true, cache: 'no-store' }, 'Impossible de charger les messages'),
+
+  markRead: (id: string, read: boolean) =>
+    request<ContactMessage>(
+      `/api/messages/${encodeURIComponent(id)}`,
+      { method: 'PATCH', body: JSON.stringify({ read }), auth: true },
+      'Mise à jour impossible'
+    ),
+
+  delete: (id: string) =>
+    request<void>(`/api/messages/${encodeURIComponent(id)}`, { method: 'DELETE', auth: true }, 'Suppression impossible'),
+};

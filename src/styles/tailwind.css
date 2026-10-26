@@ -1,4 +1,30 @@
-@import 'tailwindcss' ;
+@import 'tailwindcss';
 @source '../**/*.{js,ts,jsx,tsx}';
 
 @import 'tw-animate-css';
+
+/* Charte graphique Quincaillerie Aldjana : bleu marine + orange */
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --color-navy-50: #eef3fb;
+  --color-navy-100: #d9e3f5;
+  --color-navy-200: #b3c6ea;
+  --color-navy-300: #7f9fd8;
+  --color-navy-500: #1e4a9a;
+  --color-navy-600: #163c82;
+  --color-navy-700: #112f69;
+  --color-navy-800: #0d2552;
+  --color-navy-900: #0a1c3f;
+  --color-navy-950: #06122a;
+
+  --color-brand-50: #fff4ec;
+  --color-brand-100: #ffe5d1;
+  --color-brand-400: #fb8a3c;
+  --color-brand-500: #f47216;
+  --color-brand-600: #e0600a;
+  --color-brand-700: #b94c08;
+
+  --color-whatsapp: #25d366;
+  --color-whatsapp-dark: #1da851;
+}

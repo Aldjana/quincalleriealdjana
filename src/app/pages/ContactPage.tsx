@@ -1,268 +1,157 @@
-import { useState } from 'react';
-import { Phone, MapPin, Clock, Send, Star } from 'lucide-react';
+import { useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
+import { MapPin, Phone, Mail, Clock, Send, Loader2, CheckCircle2 } from 'lucide-react';
+import { messagesAPI } from '../../config/api';
+import { SHOP, phoneLink, whatsappLink } from '../../config/shop';
+import { Breadcrumb } from '../components/ui/Breadcrumb';
+import { WhatsAppIcon } from '../components/ui/WhatsAppIcon';
+
+const EMPTY_FORM = { name: '', phone: '', email: '', subject: '', message: '' };
+
+const inputClass =
+  'mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-navy-500 focus:ring-2 focus:ring-navy-500/15 sm:text-sm';
 
 export const ContactPage = () => {
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const [error, setError] = useState('');
 
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    address: '',
-    message: '',
-    rating: 5
-  });
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
-    // Vérifier si le numéro de téléphone est 776981453 pour rediriger vers WhatsApp
-    if (formData.phone === '776981453' || formData.phone === '+221776981453') {
-      const whatsappUrl = `https://wa.me/221776981453?text=${encodeURIComponent(`Bonjour ${formData.name},\n\nAdresse: ${formData.address}\n\nMessage: ${formData.message}`)}`;
-      window.open(whatsappUrl, '_blank');
+    setError('');
+    setStatus('sending');
+    try {
+      await messagesAPI.send({ ...form, email: form.email.trim() || undefined });
+      setForm(EMPTY_FORM);
+      setStatus('sent');
+    } catch (err) {
+      setStatus('idle');
+      setError(
+        err instanceof Error && err.message
+          ? `${err.message} Vous pouvez aussi nous écrire sur WhatsApp.`
+          : "Le message n'a pas pu être envoyé. Écrivez-nous sur WhatsApp."
+      );
     }
-    
-    // Réinitialiser le formulaire après envoi
-    setFormData({
-      name: '',
-      phone: '',
-      address: '',
-      message: '',
-      rating: 5
-    });
-    
-    // Message de confirmation
-    alert('Votre message a été envoyé avec succès! Nous vous contacterons rapidement.');
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleRatingChange = (rating: number) => {
-    setFormData({
-      ...formData,
-      rating
-    });
   };
 
   return (
-    <div className="w-full min-w-0 flex-1 pb-12 sm:pb-16">
-      <div className="mx-auto max-w-7xl px-3 py-6 sm:px-4 sm:py-8 lg:px-6">
-        <h1 className="text-2xl sm:text-3xl text-[#0a2463] mb-6 sm:mb-8 text-center">Contactez-nous</h1>
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8 lg:px-6">
+      <Breadcrumb items={[{ label: 'Accueil', to: '/' }, { label: 'Contact' }]} />
+      <div className="mb-8 text-center">
+        <h1 className="text-2xl font-bold tracking-tight text-navy-900 sm:text-3xl">Contactez-nous</h1>
+        <p className="mt-2 text-slate-600">Une question, un devis ? Notre équipe vous répond rapidement.</p>
+      </div>
 
-        
-        {/* Section Formulaire */}
-        <div className="grid gap-8 sm:gap-10 md:grid-cols-2 md:gap-12">
-          <div className="min-w-0">
-            <div className="mb-4 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-center sm:gap-3">
-              <Send className="h-6 w-6 shrink-0 text-orange-500 sm:h-8 sm:w-8" />
-              <h2 className="text-balance text-lg font-bold text-[#0a2463] sm:text-2xl">
-                Envoyez-nous un message
-              </h2>
-            </div>
-            
-            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Nom complet</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-sm sm:text-base"
-                  placeholder="Votre nom"
-                />
-              </div>
+      <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
+        <div className="space-y-5 rounded-xl border border-slate-200 bg-white p-6">
+          <h2 className="font-semibold text-navy-900">Nos informations</h2>
+          <InfoRow icon={<MapPin className="h-5 w-5" />} title="Adresse">
+            {SHOP.address}
+          </InfoRow>
+          <InfoRow icon={<Phone className="h-5 w-5" />} title="Téléphone">
+            <a href={phoneLink()} className="hover:text-brand-600">{SHOP.phoneDisplay}</a>
+          </InfoRow>
+          <InfoRow icon={<WhatsAppIcon className="h-5 w-5" />} title="WhatsApp">
+            <a href={whatsappLink(`Bonjour ${SHOP.name}, `)} target="_blank" rel="noreferrer" className="hover:text-brand-600">
+              {SHOP.phoneDisplay}
+            </a>
+          </InfoRow>
+          <InfoRow icon={<Mail className="h-5 w-5" />} title="Email">
+            <a href={`mailto:${SHOP.email}`} className="break-all hover:text-brand-600">{SHOP.email}</a>
+          </InfoRow>
+          <InfoRow icon={<Clock className="h-5 w-5" />} title="Heures d'ouverture">
+            {SHOP.hours.map((slot) => (
+              <span key={slot.days} className="block">
+                {slot.days} : {slot.time}
+              </span>
+            ))}
+          </InfoRow>
+        </div>
 
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Téléphone</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-sm sm:text-base"
-                  placeholder="Votre numéro"
-                />
-              </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-6">
+          <h2 className="font-semibold text-navy-900">Envoyez-nous un message</h2>
 
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Adresse</label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-sm sm:text-base"
-                  placeholder="Votre adresse"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Message</label>
-                <textarea
-                  name="message"
-                  value={formData.message}
-                  onChange={handleInputChange}
-                  required
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 text-sm sm:text-base"
-                  placeholder="Votre message"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Note</label>
-                <div className="flex items-center gap-1 sm:gap-2">
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <button
-                      key={rating}
-                      type="button"
-                      onClick={() => handleRatingChange(rating)}
-                      className={`p-1.5 sm:p-2 rounded-lg border ${
-                        formData.rating === rating
-                          ? 'border-orange-500 bg-orange-500 text-white'
-                          : 'border-gray-300 bg-white text-gray-700 hover:border-orange-500'
-                      }`}
-                    >
-                      <Star className="w-3 h-3 sm:w-4 sm:h-4" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 flex items-center justify-center gap-2 text-sm sm:text-base"
-              >
-                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span>Envoyer le message</span>
+          {status === 'sent' ? (
+            <div className="mt-6 flex flex-col items-center rounded-xl bg-emerald-50 px-4 py-10 text-center">
+              <CheckCircle2 className="h-10 w-10 text-emerald-600" />
+              <p className="mt-3 font-semibold text-slate-900">Message envoyé !</p>
+              <p className="mt-1 text-sm text-slate-600">Nous vous recontactons très rapidement.</p>
+              <button type="button" onClick={() => setStatus('idle')} className="mt-5 text-sm font-semibold text-brand-600 hover:text-brand-700">
+                Envoyer un autre message
               </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="mt-4 grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-medium text-slate-700">
+                Nom complet *
+                <input name="name" value={form.name} onChange={handleChange} required minLength={2} maxLength={100} autoComplete="name" className={inputClass} />
+              </label>
+              <label className="block text-sm font-medium text-slate-700">
+                Téléphone *
+                <input name="phone" type="tel" value={form.phone} onChange={handleChange} required inputMode="tel" pattern="[0-9+ ().-]{7,20}" title="Numéro de téléphone valide" autoComplete="tel" className={inputClass} />
+              </label>
+              <label className="block text-sm font-medium text-slate-700">
+                Email <span className="font-normal text-slate-400">(facultatif)</span>
+                <input name="email" type="email" value={form.email} onChange={handleChange} maxLength={120} autoComplete="email" className={inputClass} />
+              </label>
+              <label className="block text-sm font-medium text-slate-700">
+                Sujet
+                <input name="subject" value={form.subject} onChange={handleChange} maxLength={150} placeholder="Devis, disponibilité…" className={inputClass} />
+              </label>
+              <label className="block text-sm font-medium text-slate-700 sm:col-span-2">
+                Message *
+                <textarea name="message" value={form.message} onChange={handleChange} required minLength={5} maxLength={2000} rows={5} className={inputClass} />
+              </label>
+
+              {error && <p className="rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700 sm:col-span-2">{error}</p>}
+
+              <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row">
+                <button
+                  type="submit"
+                  disabled={status === 'sending'}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-navy-800 px-6 py-3 text-sm font-semibold text-white transition hover:bg-navy-900 disabled:opacity-60"
+                >
+                  {status === 'sending' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Envoyer le message
+                </button>
+                <a
+                  href={whatsappLink(`Bonjour ${SHOP.name}, `)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-lg border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                >
+                  <WhatsAppIcon className="h-4 w-4 text-whatsapp" />
+                  Écrire sur WhatsApp
+                </a>
+              </div>
             </form>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-              <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-orange-500" />
-              <h2 className="text-xl sm:text-2xl text-[#0a2463] font-bold">Nos horaires</h2>
-            </div>
-            
-            <div className="space-y-3 sm:space-y-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-orange-500 rounded-full"></div>
-                <div>
-                  <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Lundi - Vendredi</h3>
-                  <p className="text-gray-600 text-sm sm:text-base">8h00 - 18h00</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-orange-500 rounded-full"></div>
-                <div>
-                  <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Samedi</h3>
-                  <p className="text-gray-600 text-sm sm:text-base">9h00 - 15h00</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full"></div>
-                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <MapPin className="w-6 h-6 text-orange-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Adresse</h3>
-                  <p className="text-gray-600">Dakar, Sénégal</p>
-                  <p className="text-sm text-gray-500">Près du marché Sandaga</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Clock className="w-6 h-6 text-orange-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Horaires</h3>
-                  <p className="text-gray-600">Lundi - Samedi: 8h - 18h</p>
-                  <p className="text-sm text-gray-500">Dimanche: Fermé</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
+      </div>
 
-        {/* Section Témoignages Clients */}
-        <div className="mt-12 sm:mt-16">
-          <div className="flex items-center gap-2 sm:gap-3 mb-6 sm:mb-8">
-            <Star className="w-6 h-6 sm:w-8 sm:h-8 text-orange-500" />
-            <h2 className="text-xl sm:text-2xl text-[#0a2463] font-bold">Témoignages clients</h2>
-          </div>
-          
-          <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
-            <div className="bg-gray-50 rounded-lg p-4 sm:p-6 border border-gray-200">
-              <div className="flex items-start justify-between mb-3 sm:mb-4">
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-800">Mamadou Diop</h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span className="text-sm sm:text-base">77 123 45 67</span>
-                  </div>
-                </div>
-                <span className="text-xs sm:text-sm text-gray-500">28/04/2026</span>
-              </div>
-              
-              <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
-                <span className="text-sm sm:text-base text-gray-600">Dakar, Plateau</span>
-              </div>
-              
-              <p className="text-gray-700 text-sm sm:text-base mb-3 sm:mb-4">Excellent service! Livraison rapide et produits de qualité.</p>
-              
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className="w-3 h-3 sm:w-4 sm:h-4 fill-orange-400 text-orange-400"
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4 sm:p-6 border border-gray-200">
-              <div className="flex items-start justify-between mb-3 sm:mb-4">
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-800">Fatou Sow</h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span className="text-sm sm:text-base">76 987 65 43</span>
-                  </div>
-                </div>
-                <span className="text-xs sm:text-sm text-gray-500">27/04/2026</span>
-              </div>
-              
-              <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
-                <span className="text-sm sm:text-base text-gray-600">Thiès, Centre ville</span>
-              </div>
-              
-              <p className="text-gray-700 text-sm sm:text-base mb-3 sm:mb-4">Très satisfait de mes achats. Le personnel est professionnel.</p>
-              
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className="w-3 h-3 sm:w-4 sm:h-4 fill-orange-400 text-orange-400"
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="mt-6 overflow-hidden rounded-xl border border-slate-200">
+        <iframe
+          title={`Plan d'accès — ${SHOP.name}`}
+          src={`https://maps.google.com/maps?q=${encodeURIComponent(SHOP.mapQuery)}&z=15&output=embed`}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          className="h-72 w-full sm:h-96"
+        />
       </div>
     </div>
   );
 };
+
+function InfoRow({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
+  return (
+    <div className="flex gap-3">
+      <span className="mt-0.5 text-brand-500">{icon}</span>
+      <div className="min-w-0 text-sm">
+        <p className="font-semibold text-slate-900">{title}</p>
+        <div className="text-slate-600">{children}</div>
+      </div>
+    </div>
+  );
+}
