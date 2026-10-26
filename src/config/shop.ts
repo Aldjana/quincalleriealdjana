@@ -12,8 +12,8 @@ export const SHOP = {
   email: 'seckf004@gmail.com',
 
   city: 'Dakar, Sénégal',
-  address: 'Près du marché Sandaga, Dakar, Sénégal',
-  mapQuery: 'Marché Sandaga, Dakar, Sénégal',
+  address: 'Dakar, Sénégal',
+  mapQuery: 'Dakar, Sénégal',
 
   hours: [
     { days: 'Lundi - Samedi', time: '8h00 - 18h00' },
