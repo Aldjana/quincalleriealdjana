@@ -102,10 +102,12 @@ Ne mettez jamais de vraies valeurs dans un fichier versionné : renseignez-les d
 ## Déploiement
 
 1. **Backend (Render)** : le fichier `.render.yaml` configure le service (`rootDir: backend`). Renseignez les variables ci-dessus. Pour éviter la mise en veille, voir [KEEP_ALIVE_SETUP.md](KEEP_ALIVE_SETUP.md) (réveil toutes les 10 minutes, 24 h sur 24).
-2. **Frontend (Cloudflare Pages)** : *Workers & Pages → Create → Pages → Connect to Git*, puis :
-   - Framework preset : `None` — Build command : `npm run build` — Build output directory : `dist`
-   - Variables : `VITE_API_URL`, `VITE_META_PIXEL_ID`
-   - `public/_redirects` renvoie toutes les adresses vers `index.html` (navigation React) et `public/_headers` gère le cache. La version de Node est fixée par `.nvmrc`.
+2. **Frontend (Cloudflare Workers)** : projet connecté au dépôt GitHub (branche `main`).
+   - Build command : `npm run build` — Deploy command : `npx wrangler deploy`
+   - `wrangler.jsonc` publie le dossier `dist` et renvoie `index.html` pour toutes les adresses (navigation React)
+   - **Build variables** (*Settings → Build → Variables and secrets*) : `VITE_API_URL`, `VITE_META_PIXEL_ID`.
+     Ce sont des variables de **compilation** : après une modification, relancer un déploiement.
+   - `public/_headers` gère le cache, `.nvmrc` fixe la version de Node.
 
    `vercel.json` reste disponible si le site est hébergé sur Vercel.
 
