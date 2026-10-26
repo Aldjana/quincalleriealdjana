@@ -101,8 +101,13 @@ Ne mettez jamais de vraies valeurs dans un fichier versionné : renseignez-les d
 
 ## Déploiement
 
-1. **Backend (Render)** : le fichier `.render.yaml` configure le service (`rootDir: backend`). Renseignez les variables ci-dessus.
-2. **Frontend (Vercel)** : `vercel.json` gère la compilation et la redirection des routes vers `index.html`. Renseignez `VITE_API_URL`.
+1. **Backend (Render)** : le fichier `.render.yaml` configure le service (`rootDir: backend`). Renseignez les variables ci-dessus. Pour éviter la mise en veille, voir [KEEP_ALIVE_SETUP.md](KEEP_ALIVE_SETUP.md) (réveil toutes les 10 minutes, 24 h sur 24).
+2. **Frontend (Cloudflare Pages)** : *Workers & Pages → Create → Pages → Connect to Git*, puis :
+   - Framework preset : `None` — Build command : `npm run build` — Build output directory : `dist`
+   - Variables : `VITE_API_URL`, `VITE_META_PIXEL_ID`
+   - `public/_redirects` renvoie toutes les adresses vers `index.html` (navigation React) et `public/_headers` gère le cache. La version de Node est fixée par `.nvmrc`.
+
+   `vercel.json` reste disponible si le site est hébergé sur Vercel.
 
 ## Guides complémentaires
 
